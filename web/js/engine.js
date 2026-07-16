@@ -69,6 +69,7 @@ precision highp float;
 uniform int uNumStates;
 uniform float uSeed;
 uniform int uCurrentLayer;
+uniform float uDensity; // probability a cell is nonzero; nonzero cells pick uniformly among states 1..numStates-1
 
 out vec4 outColor;
 
@@ -80,9 +81,26 @@ float hash(vec3 p) {
 
 void main() {
   vec3 p = vec3(gl_FragCoord.xy, float(uCurrentLayer) * 97.0 + uSeed * 10007.0);
-  float state = floor(hash(p) * float(uNumStates));
-  state = min(state, float(uNumStates - 1));
+  float activeRoll = hash(p);
+  float colorRoll = hash(p + vec3(31.7, 5.3, 71.1));
+  float state = 0.0;
+  if (uNumStates > 1 && activeRoll < uDensity) {
+    state = 1.0 + floor(colorRoll * float(uNumStates - 1));
+    state = min(state, float(uNumStates - 1));
+  }
   outColor = vec4(state, 0.0, 0.0, 1.0);
+}
+`;
+
+const FILL_FRAGMENT_SOURCE = `#version 300 es
+precision highp float;
+
+uniform float uValue;
+
+out vec4 outColor;
+
+void main() {
+  outColor = vec4(uValue, 0.0, 0.0, 1.0);
 }
 `;
 
@@ -107,6 +125,7 @@ export class Engine {
 
     this.stepProgram = createProgram(gl, FULLSCREEN_TRIANGLE_VERTEX_SOURCE, STEP_FRAGMENT_SOURCE);
     this.seedProgram = createProgram(gl, FULLSCREEN_TRIANGLE_VERTEX_SOURCE, SEED_FRAGMENT_SOURCE);
+    this.fillProgram = createProgram(gl, FULLSCREEN_TRIANGLE_VERTEX_SOURCE, FILL_FRAGMENT_SOURCE);
     this._cacheUniformLocations();
 
     this.generation = 0;
@@ -128,6 +147,10 @@ export class Engine {
       numStates: gl.getUniformLocation(this.seedProgram, "uNumStates"),
       seed: gl.getUniformLocation(this.seedProgram, "uSeed"),
       currentLayer: gl.getUniformLocation(this.seedProgram, "uCurrentLayer"),
+      density: gl.getUniformLocation(this.seedProgram, "uDensity"),
+    };
+    this.fillUniforms = {
+      value: gl.getUniformLocation(this.fillProgram, "uValue"),
     };
   }
 
@@ -156,11 +179,43 @@ export class Engine {
     uploadLookupTexture1D(this.gl, this.ruleTableTexture, MAX_TABLE_SIZE, tableToTextureData(table));
   }
 
-  seedRandom(seedValue = Math.random()) {
+  /**
+   * CPU-generated random seed, uploaded directly — deliberately not the GPU
+   * hash-shader approach. The analytic per-fragment hash (kept below as
+   * `seedRandomGPU` since it is still useful when speed matters more than
+   * statistical quality) was found empirically to have a spatial
+   * correlation defect: aggregate density/state-split statistics come out
+   * correct, but at least one rule (the default "Living Bloom Field")
+   * reliably collapsed to a uniform fixed point within a few hundred
+   * generations when seeded that way, while an independent, verified
+   * Python simulation seeded with `numpy`'s RNG at the same density sustains
+   * indefinitely. `Math.random()` per cell has no such defect.
+   */
+  seedRandom(density = 1.0) {
+    const gl = this.gl;
+    const layerSize = this.width * this.height;
+    const data = new Float32Array(layerSize * NUM_SECTORS);
+    for (let layer = 0; layer < NUM_SECTORS; layer++) {
+      const base = layer * layerSize;
+      for (let i = 0; i < layerSize; i++) {
+        if (Math.random() < density) {
+          data[base + i] = 1 + Math.floor(Math.random() * (this.numStates - 1));
+        }
+      }
+    }
+    gl.bindTexture(gl.TEXTURE_2D_ARRAY, this.srcTexture);
+    gl.texSubImage3D(gl.TEXTURE_2D_ARRAY, 0, 0, 0, 0, this.width, this.height, NUM_SECTORS, gl.RED, gl.FLOAT, data);
+    gl.bindTexture(gl.TEXTURE_2D_ARRAY, null);
+    this.generation = 0;
+  }
+
+  /** Faster, GPU-only random seed — see the correctness caveat on `seedRandom` above. */
+  seedRandomGPU(seedValue = Math.random(), density = 1.0) {
     const gl = this.gl;
     gl.useProgram(this.seedProgram);
     gl.uniform1i(this.seedUniforms.numStates, this.numStates);
     gl.uniform1f(this.seedUniforms.seed, seedValue);
+    gl.uniform1f(this.seedUniforms.density, density);
     gl.bindFramebuffer(gl.FRAMEBUFFER, this.fbo);
     gl.viewport(0, 0, this.width, this.height);
     for (let layer = 0; layer < NUM_SECTORS; layer++) {
@@ -170,6 +225,31 @@ export class Engine {
     }
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     this.generation = 0;
+  }
+
+  /** Set every cell (all layers) to a single constant state — the "Blank" seed pattern uses `value = 0`. */
+  fillConstant(value) {
+    const gl = this.gl;
+    gl.useProgram(this.fillProgram);
+    gl.uniform1f(this.fillUniforms.value, value);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this.fbo);
+    gl.viewport(0, 0, this.width, this.height);
+    for (let layer = 0; layer < NUM_SECTORS; layer++) {
+      gl.framebufferTextureLayer(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, this.srcTexture, 0, layer);
+      drawFullscreenTriangle(gl);
+    }
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    this.generation = 0;
+  }
+
+  /** Directly write one cell's state into the current buffer (paint tool) — takes effect immediately, no ping-pong swap. */
+  setCell(q, r, sector, state) {
+    const gl = this.gl;
+    const wrappedQ = ((q % this.width) + this.width) % this.width;
+    const wrappedR = ((r % this.height) + this.height) % this.height;
+    gl.bindTexture(gl.TEXTURE_2D_ARRAY, this.srcTexture);
+    gl.texSubImage3D(gl.TEXTURE_2D_ARRAY, 0, wrappedQ, wrappedR, sector, 1, 1, 1, gl.RED, gl.FLOAT, new Float32Array([state]));
+    gl.bindTexture(gl.TEXTURE_2D_ARRAY, null);
   }
 
   step() {

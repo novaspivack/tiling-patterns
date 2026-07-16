@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kisrhombille CA — live tiling-pattern cellular automaton</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <canvas id="grid-canvas"></canvas>
+
+    <div id="startup-warning" class="startup-warning" hidden></div>
+
+    <button id="panel-open-button" class="floating-button" title="Show controls">☰</button>
+
+    <div id="panel">
+      <div class="panel-header">
+        <h1>Kisrhombille CA</h1>
+        <button id="panel-close-button" title="Hide controls">✕</button>
+      </div>
+      <p class="subtitle">A generalized k-state outer-totalistic cellular automaton on the Kisrhombille lattice.</p>
+
+      <section>
+        <div class="row">
+          <button id="run-button">Run</button>
+          <button id="pause-button">Pause</button>
+          <button id="step-button">Step</button>
+          <button id="reset-button">Reset</button>
+        </div>
+        <div class="row">
+          <span id="generation-label" class="tag">gen 0</span>
+        </div>
+      </section>
+
+      <section>
+        <label for="speed-slider">Speed</label>
+        <div class="row">
+          <input type="range" id="speed-slider" min="1" max="120" step="1" value="8" />
+          <span id="speed-label" class="tag">8 gen/s</span>
+        </div>
+      </section>
+
+      <section>
+        <label for="zoom-slider">Zoom</label>
+        <div class="row">
+          <input type="range" id="zoom-slider" min="0" max="100" step="0.5" value="75" />
+          <span id="zoom-label" class="tag">75%</span>
+        </div>
+        <div class="row">
+          <button id="zoom-reset-button">Reset view (zoom/pan)</button>
+        </div>
+      </section>
+
+      <section>
+        <h2>Seed pattern</h2>
+        <select id="seed-pattern-select"></select>
+        <div class="row density-row">
+          <label for="density-slider">Density</label>
+          <input type="range" id="density-slider" min="0" max="1" step="0.01" value="0.05" />
+          <span id="density-label" class="tag">0.05</span>
+        </div>
+        <div class="row" id="place-center-row">
+          <button id="place-center-button">Place at center</button>
+        </div>
+      </section>
+
+      <section>
+        <h2>Interaction mode</h2>
+        <div class="row">
+          <button id="mode-pan-button" class="mode-button active">Pan</button>
+          <button id="mode-paint-button" class="mode-button">Paint</button>
+          <button id="mode-place-button" class="mode-button">Place</button>
+        </div>
+        <p class="hint">Paint: drag to color individual cells. Place: click the grid to drop the selected seed pattern there (hover highlights the target cell).</p>
+        <div class="row" id="paint-swatches"></div>
+      </section>
+
+      <section>
+        <label for="preset-select">Rule presets</label>
+        <select id="preset-select"></select>
+      </section>
+
+      <section>
+        <h2>Manual rule editor</h2>
+        <div class="row">
+          <label for="states-input">States (k)</label>
+          <input type="number" id="states-input" min="2" max="9" value="3" />
+          <button id="randomize-button">Randomize</button>
+        </div>
+        <div class="row">
+          <input type="text" id="rule-code-field" spellcheck="false" autocomplete="off" />
+          <button id="rule-decrement-button" title="Decrement rule number">▼</button>
+          <button id="rule-increment-button" title="Increment rule number">▲</button>
+        </div>
+        <div class="row">
+          <button id="copy-code-button">Copy</button>
+          <button id="apply-code-button">Apply code above</button>
+        </div>
+        <p id="rule-status-label" class="status"></p>
+      </section>
+
+      <section>
+        <label for="palette-select">Color palette</label>
+        <select id="palette-select"></select>
+      </section>
+
+      <section>
+        <h2>Stats</h2>
+        <canvas id="stats-canvas" width="288" height="90"></canvas>
+        <p id="stats-label" class="status"></p>
+      </section>
+
+      <section>
+        <button id="screenshot-button">Save screenshot</button>
+      </section>
+
+      <p class="hint">Scroll to zoom, drag to pan/paint/place depending on mode. Rule code format: <code>K&lt;states&gt;R&lt;number&gt;</code> (the state count travels with the code — the same number under a different <code>K</code> is a different rule, since the table size depends on it).</p>
+    </div>
+
+    <script>
+      // Plain (non-module) script so it runs even if the module graph below
+      // fails entirely — surfaces the two most common "blank black screen,
+      // nothing works" causes as a visible on-page message instead of a
+      // silent failure only visible in the browser console.
+      (function () {
+        var banner = document.getElementById("startup-warning");
+        function showWarning(html) {
+          banner.innerHTML = html;
+          banner.hidden = false;
+        }
+        if (location.protocol === "file:") {
+          showWarning(
+            "This app uses ES module imports, which browsers block from <code>file://</code> pages (CORS). " +
+              "Serve it over HTTP instead:<br><code>cd web &amp;&amp; python3 -m http.server 8000</code><br>then open " +
+              "<code>http://localhost:8000/</code>.",
+          );
+          return;
+        }
+        if (!window.WebGL2RenderingContext) {
+          showWarning("This browser does not support WebGL2, which this app requires. Try a recent Chrome, Firefox, or Edge.");
+          return;
+        }
+        // Any other startup failure (a bad edit to one of the js/ modules,
+        // a real runtime exception, etc.) — report it rather than leaving
+        // a black canvas with no explanation.
+        window.addEventListener("error", function (event) {
+          if (window.__appStarted) return; // already running fine; a later runtime error is not a startup failure
+          showWarning("App failed to start: <code>" + (event.message || "unknown error") + "</code>. Check the browser console for details.");
+        });
+        window.addEventListener("unhandledrejection", function (event) {
+          if (window.__appStarted) return;
+          var reason = event.reason && event.reason.message ? event.reason.message : String(event.reason);
+          showWarning("App failed to start: <code>" + reason + "</code>. Check the browser console for details.");
+        });
+      })();
+    </script>
+    <script type="module" src="js/main.js"></script>
+  </body>
+</html>

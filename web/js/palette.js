@@ -1,4 +1,5 @@
-// Palette generation for up to MAX_STATES color classes.
+// Palette generation for up to MAX_STATES color classes, with several named
+// palettes to choose from.
 
 import { MAX_STATES } from "./rule.js";
 
@@ -18,17 +19,44 @@ function hslToRgb(h, s, l) {
   return [r + m, g + m, b + m];
 }
 
-/** A `Float32Array` of `MAX_STATES` RGB triples (27 floats); only the first
- * `numStates` are used by the shader, but the array is always full-size so
- * it can be uploaded straight into the `uPalette[MAX_STATES]` uniform. */
-export function generatePalette(numStates) {
+function huesweepPalette(hueStart, hueSpan, saturation, lightness) {
+  return (numStates) => {
+    const data = new Float32Array(MAX_STATES * 3);
+    for (let i = 0; i < numStates; i++) {
+      const t = numStates > 1 ? i / numStates : 0;
+      const hue = (hueStart + t * hueSpan) % 360;
+      const [r, g, b] = hslToRgb(hue, saturation, lightness);
+      data[i * 3 + 0] = r;
+      data[i * 3 + 1] = g;
+      data[i * 3 + 2] = b;
+    }
+    return data;
+  };
+}
+
+function grayscalePalette(numStates) {
   const data = new Float32Array(MAX_STATES * 3);
   for (let i = 0; i < numStates; i++) {
-    const hue = (i * 360) / numStates;
-    const [r, g, b] = hslToRgb(hue, 0.62, 0.58);
-    data[i * 3 + 0] = r;
-    data[i * 3 + 1] = g;
-    data[i * 3 + 2] = b;
+    const t = numStates > 1 ? i / (numStates - 1) : 0;
+    const lightness = 0.12 + t * 0.78;
+    data[i * 3 + 0] = lightness;
+    data[i * 3 + 1] = lightness;
+    data[i * 3 + 2] = lightness;
   }
   return data;
+}
+
+export const PALETTES = [
+  { id: "rainbow", name: "Rainbow", generate: huesweepPalette(0, 360, 0.62, 0.58) },
+  { id: "warm", name: "Warm (reds, golds, magenta)", generate: huesweepPalette(340, 90, 0.68, 0.55) },
+  { id: "cool", name: "Cool (blues, teals, violets)", generate: huesweepPalette(170, 130, 0.6, 0.55) },
+  { id: "sunset", name: "Sunset", generate: huesweepPalette(300, 100, 0.7, 0.6) },
+  { id: "grayscale", name: "Grayscale", generate: grayscalePalette },
+];
+
+export const DEFAULT_PALETTE_ID = "rainbow";
+
+export function generatePalette(paletteId, numStates) {
+  const palette = PALETTES.find((p) => p.id === paletteId) ?? PALETTES[0];
+  return palette.generate(numStates);
 }

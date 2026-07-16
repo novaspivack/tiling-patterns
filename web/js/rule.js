@@ -78,6 +78,30 @@ export function decodeRule(code) {
   return { numStates, table };
 }
 
+/**
+ * `code` with its rule number shifted by `delta` (an integer, positive or
+ * negative), clamped to `[0, numStates^tableSize - 1]` — lets the UI's
+ * increment/decrement buttons "tick" through neighboring rules without the
+ * state count ever changing. Note the state count travels with the code by
+ * design: the same numeric part under a different `K` is an unrelated rule
+ * (the table layout depends on `numStates`), not the "same rule at a
+ * different resolution."
+ */
+export function shiftRuleNumber(code, delta) {
+  const { numStates, table } = decodeRule(code);
+  const size = tableSize(numStates);
+  const base = BigInt(numStates);
+  let ruleNumber = 0n;
+  for (let i = size - 1; i >= 0; i--) {
+    ruleNumber = ruleNumber * base + BigInt(table[i]);
+  }
+  const maxRuleNumber = base ** BigInt(size) - 1n;
+  let shifted = ruleNumber + BigInt(delta);
+  if (shifted < 0n) shifted = 0n;
+  if (shifted > maxRuleNumber) shifted = maxRuleNumber;
+  return `K${numStates}R${shifted.toString()}`;
+}
+
 /** `table`, zero-padded to `MAX_TABLE_SIZE`, as a `Float32Array` ready to upload to the rule lookup texture. */
 export function tableToTextureData(table) {
   const data = new Float32Array(MAX_TABLE_SIZE);

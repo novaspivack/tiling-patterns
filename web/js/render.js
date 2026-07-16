@@ -21,9 +21,12 @@ uniform sampler2DArray uState;
 uniform vec2 uCameraCenter;
 uniform float uUnitsPerPixel;
 uniform vec2 uCanvasSize;
+uniform float uPixelRatio;
 uniform ivec2 uGridSize;
 uniform float uEdgeLength;
 uniform vec3 uPalette[${MAX_STATES}];
+uniform ivec2 uHighlightHex;
+uniform int uHighlightActive;
 
 out vec4 outColor;
 
@@ -91,7 +94,14 @@ float distToSegment(vec2 p, vec2 a, vec2 b) {
 }
 
 void main() {
-  vec2 pixel = gl_FragCoord.xy;
+  // gl_FragCoord is in device pixels with a bottom-left origin, Y increasing
+  // upward (the WebGL/OpenGL window-space convention). uUnitsPerPixel and
+  // uCanvasSize are calibrated in CSS pixels with a top-left origin, Y
+  // increasing downward (matching event.offsetX/offsetY in camera.js, so
+  // panning and painting hit-test the same pixel a user actually
+  // sees/clicks) -- converting both axes here (device->CSS scale, plus the
+  // Y-axis flip) is what keeps the two in sync.
+  vec2 pixel = vec2(gl_FragCoord.x / uPixelRatio, uCanvasSize.y - gl_FragCoord.y / uPixelRatio);
   vec2 world = vec2(
     (pixel.x - uCanvasSize.x * 0.5) * uUnitsPerPixel + uCameraCenter.x,
     (uCanvasSize.y * 0.5 - pixel.y) * uUnitsPerPixel + uCameraCenter.y
@@ -117,12 +127,23 @@ void main() {
   sectorCorners(sector, uEdgeLength, o, m, v);
   float edgeDist = min(distToSegment(localPoint, o, m), min(distToSegment(localPoint, m, v), distToSegment(localPoint, o, v)));
 
-  float lineHalfWidth = uUnitsPerPixel * 0.8;
-  float aa = uUnitsPerPixel * 0.8 + 1e-6;
+  // Cap the line width at a small fraction of the cell size itself: once cells
+  // shrink below a few screen pixels (zoomed far out over a huge grid), a
+  // fixed screen-space line width would cover almost the whole cell and the
+  // view would render as solid edge-color. Letting the line thin out below
+  // that point instead falls back to (aliased) point-sampled fill color,
+  // which is still recognizably colorful rather than uniformly dark.
+  float lineHalfWidth = min(uUnitsPerPixel * 0.8, uEdgeLength * 0.035);
+  float aa = lineHalfWidth + 1e-6;
   float edgeMix = 1.0 - smoothstep(lineHalfWidth - aa, lineHalfWidth + aa, edgeDist);
   vec3 edgeColor = vec3(0.06, 0.05, 0.07);
 
-  outColor = vec4(mix(fillColor, edgeColor, edgeMix), 1.0);
+  vec3 color = mix(fillColor, edgeColor, edgeMix);
+  if (uHighlightActive == 1 && wq == wrapi(uHighlightHex.x, uGridSize.x) && wr == wrapi(uHighlightHex.y, uGridSize.y)) {
+    color = mix(color, vec3(1.0), 0.45);
+  }
+
+  outColor = vec4(color, 1.0);
 }
 `;
 
@@ -137,13 +158,16 @@ export class Renderer {
       cameraCenter: g.getUniformLocation(this.program, "uCameraCenter"),
       unitsPerPixel: g.getUniformLocation(this.program, "uUnitsPerPixel"),
       canvasSize: g.getUniformLocation(this.program, "uCanvasSize"),
+      pixelRatio: g.getUniformLocation(this.program, "uPixelRatio"),
       gridSize: g.getUniformLocation(this.program, "uGridSize"),
       edgeLength: g.getUniformLocation(this.program, "uEdgeLength"),
       palette: g.getUniformLocation(this.program, "uPalette"),
+      highlightHex: g.getUniformLocation(this.program, "uHighlightHex"),
+      highlightActive: g.getUniformLocation(this.program, "uHighlightActive"),
     };
   }
 
-  draw(engine, camera, paletteData) {
+  draw(engine, camera, paletteData, highlightHex = null) {
     const gl = this.gl;
     gl.useProgram(this.program);
 
@@ -151,12 +175,23 @@ export class Renderer {
     gl.bindTexture(gl.TEXTURE_2D_ARRAY, engine.srcTexture);
     gl.uniform1i(this.uniforms.state, 0);
 
+    const cssWidth = this.canvas.clientWidth || this.canvas.width;
+    const cssHeight = this.canvas.clientHeight || this.canvas.height;
+    const pixelRatio = this.canvas.width / cssWidth;
+
     gl.uniform2f(this.uniforms.cameraCenter, camera.x, camera.y);
     gl.uniform1f(this.uniforms.unitsPerPixel, camera.unitsPerPixel);
-    gl.uniform2f(this.uniforms.canvasSize, this.canvas.width, this.canvas.height);
+    gl.uniform2f(this.uniforms.canvasSize, cssWidth, cssHeight);
+    gl.uniform1f(this.uniforms.pixelRatio, pixelRatio);
     gl.uniform2i(this.uniforms.gridSize, engine.width, engine.height);
     gl.uniform1f(this.uniforms.edgeLength, EDGE_LENGTH);
     gl.uniform3fv(this.uniforms.palette, paletteData);
+    if (highlightHex) {
+      gl.uniform1i(this.uniforms.highlightActive, 1);
+      gl.uniform2i(this.uniforms.highlightHex, highlightHex.q, highlightHex.r);
+    } else {
+      gl.uniform1i(this.uniforms.highlightActive, 0);
+    }
 
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.viewport(0, 0, this.canvas.width, this.canvas.height);
