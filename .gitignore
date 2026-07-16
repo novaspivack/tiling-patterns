@@ -1,0 +1,62 @@
+# See NOTES/PROJECT_SEED.md §7.1–§7.2 (gitignore policy + Git LFS for large files).
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors / IDE
+.idea/
+# Commit shared VS Code defaults (linter scope); ignore personal launch/tasks
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+*.swp
+*.swo
+*~
+
+# Private keys (do not commit)
+*.pem
+
+# Logs
+*.log
+logs/
+
+# Caches (exclude noisy cache dirs; do not blanket-ignore *.json — see PROJECT_SEED §7.1)
+.cache/
+
+# Python (if used later)
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+
+# Node (if used later)
+node_modules/
+npm-debug.log*
+yarn-error.log*
+
+experiments/output/
+dist/
+build/
+*.egg-info/
+
+# ---------------------------------------------------------------------------
+# Public-origin — Mode B (see GITIGNORE_PUBLIC_REPO_RULES.md, docs/008_PUBLIC_REPO_PREP.md).
+# origin (novaspivack/tiling-patterns) is planned to go public; Mode B is applied from the
+# repo's first commit so internal program/methodology material never enters published history.
+# These paths stay on disk (agents keep using them locally) but are never committed to origin.
+specs/
+NOTES/
+work-notes/
+docs/
+.cursor/
+.cursorrules
+AGENTS.md
+CODING_PROTOCOLS.md
+GITIGNORE_PUBLIC_REPO_RULES.md
+MANIFEST.md
+PROJECT_SEED.md
+QUEUE.md
+THE_GENIUS_TEAM_PROMPT.md
+

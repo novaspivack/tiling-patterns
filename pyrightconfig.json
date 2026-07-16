@@ -1,0 +1,17 @@
+{
+  "include": ["src", "tests", "experiments", "scripts"],
+  "exclude": [
+    "**/.git/**",
+    "**/.venv/**",
+    "**/node_modules/**",
+    "**/.lake/**",
+    "**/__pycache__/**",
+    "**/.pytest_cache/**",
+    "**/.mypy_cache/**",
+    "**/dist/**",
+    "**/build/**"
+  ],
+  "typeCheckingMode": "basic",
+  "reportMissingImports": "warning",
+  "reportMissingModuleSource": "none"
+}
