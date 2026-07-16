@@ -6,7 +6,7 @@
 import { MAX_STATES, MIN_STATES, decodeRule, encodeRule, randomTable, shiftRuleNumber, tableSize } from "./rule.js";
 import { PRESETS } from "./presets.js";
 import { PALETTES } from "./palette.js";
-import { SEED_PATTERNS, isPlaceablePattern } from "./seed-patterns.js";
+import { SEED_PATTERNS, isPlaceablePattern, isDensityAdjustablePattern } from "./seed-patterns.js";
 import { drawStatsGraph, formatStatsLabel } from "./stats.js";
 
 export function wireControls(app) {
@@ -107,7 +107,7 @@ export function wireControls(app) {
   }
 
   function updateDensityVisibility() {
-    densityRow.style.display = seedPatternSelect.value === "random" ? "flex" : "none";
+    densityRow.style.display = isDensityAdjustablePattern(seedPatternSelect.value) ? "flex" : "none";
     placeCenterRow.style.display = isPlaceablePattern(seedPatternSelect.value) ? "flex" : "none";
   }
 
