@@ -6,8 +6,8 @@ import { Engine } from "./engine.js";
 import { Camera } from "./camera.js";
 import { Renderer, EDGE_LENGTH } from "./render.js";
 import { generatePalette, DEFAULT_PALETTE_ID } from "./palette.js";
-import { decodeRule } from "./rule.js";
-import { DEFAULT_PRESET } from "./presets.js";
+import { decodeRule, DEFAULT_NUM_NEIGHBORS } from "./rule.js";
+import { defaultPresetFor } from "./presets.js";
 import { applySeedPattern, applySeedPatternAt, isPlaceablePattern, DEFAULT_SEED_PATTERN_ID, DEFAULT_DENSITY } from "./seed-patterns.js";
 import { foldToFundamental } from "./fold.js";
 import { StatsTracker } from "./stats.js";
@@ -36,10 +36,11 @@ class App {
     this.onStatsUpdate = null;
 
     this.numStates = 2;
+    this.numNeighbors = DEFAULT_NUM_NEIGHBORS;
     this.table = null;
     this.paletteId = DEFAULT_PALETTE_ID;
     this.paletteData = generatePalette(this.paletteId, 2);
-    this.currentPresetCode = DEFAULT_PRESET.code;
+    this.currentPresetCode = null;
 
     this.seedPatternId = DEFAULT_SEED_PATTERN_ID;
     this.density = DEFAULT_DENSITY;
@@ -76,8 +77,9 @@ class App {
     const worldHeight = GRID_HEIGHT * EDGE_LENGTH * 1.5;
     this.camera.setWorldExtent(worldWidth, worldHeight);
 
-    const { numStates, table } = decodeRule(DEFAULT_PRESET.code);
-    this.applyRule(numStates, table, DEFAULT_PRESET.code);
+    const defaultPreset = defaultPresetFor(this.numNeighbors);
+    const { numStates, numNeighbors, table } = decodeRule(defaultPreset.code);
+    this.applyRule(numStates, table, numNeighbors, defaultPreset.code);
     this.resetView();
     this.reseed(); // texture storage contents are unspecified until explicitly written
 
@@ -93,15 +95,24 @@ class App {
   }
 
   /** `presetCode` is the matching entry in `presets.js` when this rule came from that dropdown, `null` otherwise (randomize, manual edit, increment/decrement) — drives whether the preset dropdown shows a selection. */
-  applyRule(numStates, table, presetCode = null) {
+  applyRule(numStates, table, numNeighbors = DEFAULT_NUM_NEIGHBORS, presetCode = null) {
     this.numStates = numStates;
+    this.numNeighbors = numNeighbors;
     this.table = table;
     this.paletteData = generatePalette(this.paletteId, numStates);
-    this.engine.setRule(numStates, table);
+    this.engine.setRule(numStates, table, numNeighbors);
     this.currentPresetCode = presetCode;
     this.paintState = Math.min(this.paintState, numStates - 1);
     this.stats.reset();
     if (this.onRuleChange) this.onRuleChange();
+  }
+
+  /** Switches the active neighborhood (3 edge-only, or 16 edge+vertex) and applies that neighborhood's default preset — a rule number under the old neighborhood has a completely different table layout, so it cannot be carried over as-is. */
+  setNeighborhoodMode(numNeighbors) {
+    if (numNeighbors === this.numNeighbors) return;
+    const preset = defaultPresetFor(numNeighbors);
+    const { numStates, table } = decodeRule(preset.code);
+    this.applyRule(numStates, table, numNeighbors, preset.code);
   }
 
   setPalette(paletteId) {

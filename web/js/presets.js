@@ -4,8 +4,14 @@
 // (measured settled-activity plus visual character), best first, per
 // feedback from watching each rule run for hundreds of generations —
 // not just whether it initially looks promising.
+//
+// Kept as 2 separate lists, one per neighborhood size (see rule.js) — a
+// rule code's table layout depends on the neighborhood it was found under,
+// so a 3-neighbor rule number reinterpreted as a 16-neighbor rule (or vice
+// versa) is not "the same rule at a different resolution," it is simply a
+// different, unrelated rule (almost always an invalid/out-of-range one).
 
-export const PRESETS = [
+export const PRESETS_3 = [
   {
     name: "Living Bloom Field (default)",
     code: "K3R8045469900",
@@ -117,4 +123,50 @@ export const PRESETS = [
   { name: "3-State Variant K", code: "K3R3826621804", description: "Hand-picked from the browser's Randomize tool." },
 ];
 
-export const DEFAULT_PRESET = PRESETS[0];
+// 16-neighbor ("edge + vertex") rules — found via
+// `experiments/goldilocks_rule_search.py --num-neighbors 16` (1200 random
+// trials per state count; see that script for the search criteria) and
+// verified over 400 generations (not just the search's 60-generation
+// scoring window) before being promoted here — the larger neighbor-sum
+// range mixes much more per step than the 3-neighbor case, so a rule can
+// look "settled" at 60 generations while still slowly decaying at 400. At
+// k=3 with random rules, only ~3/1200 trials were genuinely stable (vs.
+// most of the 3-neighbor default's single-entry mutations landing in its
+// class) — the goldilocks basin here is real but much narrower, and no
+// k=4 trial (0/1200) found a stable living equilibrium at all, so this
+// list currently tops out at 3 states.
+export const PRESETS_16 = [
+  {
+    name: "Vertex Rosette Field (default)",
+    code: "K3N16R103015167793430793634347264187881395621689945824",
+    description:
+      "3-state; genuine dynamic equilibrium — settled activity holds flat at ~34% of cells changing per generation from generation 100 through at least generation 400 (not still decaying), with high color diversity (83% of max entropy). Small pinwheel rosettes nucleate densely across an orange-dominant field, distinctly denser/finer-grained than any 3-neighbor rule (the richer 16-cell neighborhood mixes far more per step).",
+  },
+  {
+    name: "Vertex Mosaic (dense, near-frozen)",
+    code: "K2N16R15165874216",
+    description:
+      "2-state (binary); settles into a dense, near-maximal-entropy pinwheel mosaic and then holds almost perfectly still (~0.3% of cells still changing per generation, stable from generation 100 through at least generation 400) — a frozen mosaic in the same spirit as the 3-neighbor 'Dense Rosette Field,' but with the extended neighborhood's characteristic fine pinwheel texture.",
+  },
+  {
+    name: "Vertex Mosaic (variant)",
+    code: "K2N16R11266351152",
+    description: "2-state (binary); same near-frozen dense-pinwheel character as Vertex Mosaic, slightly higher residual flicker (~0.8% of cells changing per generation).",
+  },
+];
+
+export const PRESETS_BY_NEIGHBORHOOD = { 3: PRESETS_3, 16: PRESETS_16 };
+
+export function presetsFor(numNeighbors) {
+  const presets = PRESETS_BY_NEIGHBORHOOD[numNeighbors];
+  if (!presets) throw new Error(`no presets registered for numNeighbors=${numNeighbors}`);
+  return presets;
+}
+
+export function defaultPresetFor(numNeighbors) {
+  return presetsFor(numNeighbors)[0];
+}
+
+// Backward-compatible aliases for the (much more common) default neighborhood.
+export const PRESETS = PRESETS_3;
+export const DEFAULT_PRESET = PRESETS_3[0];

@@ -3,17 +3,19 @@
 // outer-totalistic rule (see rule.js) via 12 draw calls per generation (one
 // per sector layer, each reading the *other* buffer's 12 layers).
 
-import { crossHexNeighborUniformData, NUM_SECTORS } from "./lattice.js";
+import { crossHexNeighborUniformData, NUM_SECTORS, NUM_VERTEX_NEIGHBORS_PER_SECTOR, vertexNeighborUniformData } from "./lattice.js";
 import {
   FULLSCREEN_TRIANGLE_VERTEX_SOURCE,
   createLookupTexture1D,
+  createLookupTexture1DRGB,
   createProgram,
   createStateArrayTexture,
   drawFullscreenTriangle,
   requireFloatRenderingSupport,
   uploadLookupTexture1D,
+  uploadLookupTexture1DRGB,
 } from "./gl-utils.js";
-import { MAX_TABLE_SIZE, tableToTextureData } from "./rule.js";
+import { DEFAULT_NUM_NEIGHBORS, MAX_TABLE_SIZE, maxNeighborSum, tableToTextureData } from "./rule.js";
 
 const STEP_FRAGMENT_SOURCE = `#version 300 es
 precision highp float;
@@ -22,11 +24,15 @@ precision highp sampler2DArray;
 
 uniform sampler2DArray uSrc;
 uniform sampler2D uRuleTable;
+uniform sampler2D uVertexHexTable; // static (dq, dr, sector) triples, 12 sectors x 13 vertex-only neighbors — see lattice.js's VERTEX_NEIGHBOR
 uniform int uNumStates;
 uniform int uMaxSum;
+uniform int uUseExtendedNeighborhood; // 0 = 3-neighbor edge-only, 1 = 16-neighbor edge+vertex
 uniform ivec3 uCrossHex[12];
 uniform int uCurrentLayer;
 uniform ivec2 uGridSize;
+
+#define NUM_VERTEX_NEIGHBORS_PER_SECTOR 13
 
 out vec4 outColor;
 
@@ -55,8 +61,16 @@ void main() {
   ivec3 crossHex = uCrossHex[layer];
   float n2 = fetchState(coord.x + crossHex.x, coord.y + crossHex.y, crossHex.z);
 
-  int sum = int(n0 + n1 + n2 + 0.5);
-  int tableIndex = int(own + 0.5) * (uMaxSum + 1) + sum;
+  float sum = n0 + n1 + n2;
+  if (uUseExtendedNeighborhood == 1) {
+    for (int i = 0; i < NUM_VERTEX_NEIGHBORS_PER_SECTOR; i++) {
+      int tableRow = layer * NUM_VERTEX_NEIGHBORS_PER_SECTOR + i;
+      vec3 offset = texelFetch(uVertexHexTable, ivec2(tableRow, 0), 0).rgb;
+      sum += fetchState(coord.x + int(offset.x), coord.y + int(offset.y), int(offset.z));
+    }
+  }
+
+  int tableIndex = int(own + 0.5) * (uMaxSum + 1) + int(sum + 0.5);
 
   float next = texelFetch(uRuleTable, ivec2(tableIndex, 0), 0).r;
   outColor = vec4(next, 0.0, 0.0, 1.0);
@@ -120,8 +134,15 @@ export class Engine {
 
     this.ruleTableTexture = createLookupTexture1D(gl, MAX_TABLE_SIZE);
     this.numStates = 2;
+    this.numNeighbors = DEFAULT_NUM_NEIGHBORS;
     this.maxSum = 3;
     this._crossHexData = crossHexNeighborUniformData();
+
+    // The vertex-neighbor table is a fixed lattice property (independent of
+    // the current rule), so it is uploaded once here, not per `setRule` call.
+    const vertexHexSize = NUM_SECTORS * NUM_VERTEX_NEIGHBORS_PER_SECTOR;
+    this.vertexHexTexture = createLookupTexture1DRGB(gl, vertexHexSize);
+    uploadLookupTexture1DRGB(gl, this.vertexHexTexture, vertexHexSize, Float32Array.from(vertexNeighborUniformData()));
 
     this.stepProgram = createProgram(gl, FULLSCREEN_TRIANGLE_VERTEX_SOURCE, STEP_FRAGMENT_SOURCE);
     this.seedProgram = createProgram(gl, FULLSCREEN_TRIANGLE_VERTEX_SOURCE, SEED_FRAGMENT_SOURCE);
@@ -142,6 +163,8 @@ export class Engine {
       crossHex: gl.getUniformLocation(this.stepProgram, "uCrossHex"),
       currentLayer: gl.getUniformLocation(this.stepProgram, "uCurrentLayer"),
       gridSize: gl.getUniformLocation(this.stepProgram, "uGridSize"),
+      vertexHexTable: gl.getUniformLocation(this.stepProgram, "uVertexHexTable"),
+      useExtendedNeighborhood: gl.getUniformLocation(this.stepProgram, "uUseExtendedNeighborhood"),
     };
     this.seedUniforms = {
       numStates: gl.getUniformLocation(this.seedProgram, "uNumStates"),
@@ -173,9 +196,10 @@ export class Engine {
     return this.textures[1 - this.srcIndex];
   }
 
-  setRule(numStates, table) {
+  setRule(numStates, table, numNeighbors = DEFAULT_NUM_NEIGHBORS) {
     this.numStates = numStates;
-    this.maxSum = 3 * (numStates - 1);
+    this.numNeighbors = numNeighbors;
+    this.maxSum = maxNeighborSum(numStates, numNeighbors);
     uploadLookupTexture1D(this.gl, this.ruleTableTexture, MAX_TABLE_SIZE, tableToTextureData(table));
   }
 
@@ -264,8 +288,13 @@ export class Engine {
     gl.bindTexture(gl.TEXTURE_2D, this.ruleTableTexture);
     gl.uniform1i(this.stepUniforms.ruleTable, 1);
 
+    gl.activeTexture(gl.TEXTURE2);
+    gl.bindTexture(gl.TEXTURE_2D, this.vertexHexTexture);
+    gl.uniform1i(this.stepUniforms.vertexHexTable, 2);
+
     gl.uniform1i(this.stepUniforms.numStates, this.numStates);
     gl.uniform1i(this.stepUniforms.maxSum, this.maxSum);
+    gl.uniform1i(this.stepUniforms.useExtendedNeighborhood, this.numNeighbors === 16 ? 1 : 0);
     gl.uniform3iv(this.stepUniforms.crossHex, this._crossHexData);
     gl.uniform2i(this.stepUniforms.gridSize, this.width, this.height);
 

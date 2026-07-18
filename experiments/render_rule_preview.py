@@ -59,12 +59,12 @@ def main() -> None:
     output_dir.mkdir(exist_ok=True)
 
     for code in codes:
-        num_states, table = decode_rule(code)
+        num_states, num_neighbors, table = decode_rule(code)
         rng = random.Random(hash(code) & 0xFFFFFFFF)
         grid_shape = ToroidalGrid(GRID_SIZE, GRID_SIZE)
         grid = grid_shape.seed_random(num_states, rng)
         for _ in range(GENERATIONS):
-            grid = step(grid, num_states, table)
+            grid = step(grid, num_states, table, num_neighbors)
 
         output_path = output_dir / f"rule_preview_{code}.png"
         render_grid(grid, num_states, f"{code} (gen {GENERATIONS})", output_path)

@@ -85,3 +85,22 @@ export function uploadLookupTexture1D(gl, texture, size, data) {
   gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, size, 1, gl.RED, gl.FLOAT, data);
   gl.bindTexture(gl.TEXTURE_2D, null);
 }
+
+/** Like `createLookupTexture1D`, but 3 float channels per texel — for small *static* (dq, dr, sector)-triple tables too large to comfortably fit as a raw GLSL uniform array on every device. */
+export function createLookupTexture1DRGB(gl, size) {
+  const texture = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, texture);
+  gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGB32F, size, 1);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.bindTexture(gl.TEXTURE_2D, null);
+  return texture;
+}
+
+export function uploadLookupTexture1DRGB(gl, texture, size, data) {
+  gl.bindTexture(gl.TEXTURE_2D, texture);
+  gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, size, 1, gl.RGB, gl.FLOAT, data);
+  gl.bindTexture(gl.TEXTURE_2D, null);
+}

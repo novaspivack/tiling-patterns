@@ -4,8 +4,8 @@ match what `geometry.neighbors` actually computes (see
 
 from __future__ import annotations
 
-from tiling_patterns.geometry import CellAddress, HexCoord, neighbors
-from tiling_patterns.lattice import CROSS_HEX_NEIGHBOR, NUM_SECTORS
+from tiling_patterns.geometry import CellAddress, HexCoord, neighbors, vertex_neighbors
+from tiling_patterns.lattice import CROSS_HEX_NEIGHBOR, NUM_SECTORS, VERTEX_NEIGHBOR
 
 EDGE_LENGTH = 1.0
 ORIGIN = HexCoord(0, 0)
@@ -29,3 +29,13 @@ def test_in_hex_neighbors_are_always_sector_plus_minus_one() -> None:
         address = CellAddress(ORIGIN, sector)
         in_hex = {n.sector for n in neighbors(address, EDGE_LENGTH) if n.hex == ORIGIN}
         assert in_hex == {(sector - 1) % NUM_SECTORS, (sector + 1) % NUM_SECTORS}
+
+
+def _derived_vertex_neighbor(sector: int) -> tuple[tuple[int, int, int], ...]:
+    address = CellAddress(ORIGIN, sector)
+    return tuple(sorted((n.hex.q - ORIGIN.q, n.hex.r - ORIGIN.r, n.sector) for n in vertex_neighbors(address, EDGE_LENGTH)))
+
+
+def test_committed_vertex_table_matches_geometry_vertex_neighbors() -> None:
+    for sector in range(NUM_SECTORS):
+        assert VERTEX_NEIGHBOR[sector] == _derived_vertex_neighbor(sector)

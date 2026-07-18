@@ -21,6 +21,7 @@ from tiling_patterns.geometry import (
     neighbors,
     rotate,
     sector_corners,
+    vertex_neighbors,
 )
 
 EDGE_LENGTH = 1.7
@@ -88,6 +89,44 @@ def test_neighbor_adjacency_is_reciprocal(sector: int) -> None:
     address = CellAddress(HexCoord(-1, 2), sector)
     for neighbor in neighbors(address, EDGE_LENGTH):
         assert address in neighbors(neighbor, EDGE_LENGTH)
+
+
+@pytest.mark.parametrize("sector", range(12))
+def test_vertex_neighbors_returns_exactly_thirteen_new_addresses(sector: int) -> None:
+    """Every cell has exactly 13 vertex-sharing neighbors beyond its 3
+    edge-neighbors (9 same-hex + 4 cross-hex, from 2 other hexagons) — a
+    fixed count independent of sector, verified computationally rather than
+    assumed (an earlier hand derivation predicted 12; the probe-based
+    construction below is authoritative). Combined with `neighbors`, this
+    is the full 16-neighbor "edge + vertex" extended neighborhood."""
+    address = CellAddress(HexCoord(2, -1), sector)
+    vertex_only = vertex_neighbors(address, EDGE_LENGTH)
+    assert len(vertex_only) == 13
+    assert len(set(vertex_only)) == 13
+    assert address not in vertex_only
+    edge_neighbors = set(neighbors(address, EDGE_LENGTH))
+    assert edge_neighbors.isdisjoint(vertex_only)
+    same_hex = [n for n in vertex_only if n.hex == address.hex]
+    cross_hex = [n for n in vertex_only if n.hex != address.hex]
+    assert len(same_hex) == 9
+    assert len(cross_hex) == 4
+    assert len({n.hex for n in cross_hex}) == 2  # exactly 2 other hexagons, 2 sectors each
+
+
+@pytest.mark.parametrize("sector", range(12))
+def test_vertex_neighbor_adjacency_is_reciprocal(sector: int) -> None:
+    """If B is a vertex-neighbor of A, A must be a vertex-neighbor of B."""
+    address = CellAddress(HexCoord(-2, 3), sector)
+    for neighbor in vertex_neighbors(address, EDGE_LENGTH):
+        assert address in vertex_neighbors(neighbor, EDGE_LENGTH)
+
+
+def test_vertex_neighbors_stable_across_epsilon_choices() -> None:
+    """The probe radius is an implementation detail, not part of the geometric claim — any small enough epsilon must agree."""
+    address = CellAddress(HexCoord(0, 0), 5)
+    baseline = set(vertex_neighbors(address, EDGE_LENGTH, epsilon=EDGE_LENGTH * 1e-4))
+    for epsilon in (EDGE_LENGTH * 1e-3, EDGE_LENGTH * 1e-5, EDGE_LENGTH * 1e-6):
+        assert set(vertex_neighbors(address, EDGE_LENGTH, epsilon=epsilon)) == baseline
 
 
 def test_cell_centroid_lies_within_hex_radius() -> None:

@@ -3,8 +3,8 @@
 // (randomize, encode + copy, paste + apply), palette dropdown, screenshot
 // button, and panel show/hide. Pure DOM glue — no WebGL here.
 
-import { MAX_STATES, MIN_STATES, decodeRule, encodeRule, randomTable, shiftRuleNumber, tableSize } from "./rule.js";
-import { PRESETS } from "./presets.js";
+import { MAX_STATES, MIN_STATES, NUM_NEIGHBORS_OPTIONS, decodeRule, encodeRule, randomTable, shiftRuleNumber, tableSize } from "./rule.js";
+import { presetsFor } from "./presets.js";
 import { PALETTES } from "./palette.js";
 import { SEED_PATTERNS, isPlaceablePattern, isDensityAdjustablePattern } from "./seed-patterns.js";
 import { drawStatsGraph, formatStatsLabel } from "./stats.js";
@@ -37,6 +37,8 @@ export function wireControls(app) {
   const modePlaceButton = document.getElementById("mode-place-button");
   const paintSwatchesContainer = document.getElementById("paint-swatches");
 
+  const neighborhoodButtons = new Map(NUM_NEIGHBORS_OPTIONS.map((n) => [n, document.getElementById(`neighborhood-${n}-button`)]));
+
   const presetSelect = document.getElementById("preset-select");
   const statesInput = document.getElementById("states-input");
   const randomizeButton = document.getElementById("randomize-button");
@@ -53,13 +55,17 @@ export function wireControls(app) {
   const statsCanvas = document.getElementById("stats-canvas");
   const statsLabel = document.getElementById("stats-label");
 
-  for (const preset of PRESETS) {
-    const option = document.createElement("option");
-    option.value = preset.code;
-    option.textContent = preset.name;
-    option.title = preset.description;
-    presetSelect.appendChild(option);
+  function rebuildPresetOptions() {
+    presetSelect.innerHTML = "";
+    for (const preset of presetsFor(app.numNeighbors)) {
+      const option = document.createElement("option");
+      option.value = preset.code;
+      option.textContent = preset.name;
+      option.title = preset.description;
+      presetSelect.appendChild(option);
+    }
   }
+  rebuildPresetOptions();
 
   for (const pattern of SEED_PATTERNS) {
     const option = document.createElement("option");
@@ -81,7 +87,20 @@ export function wireControls(app) {
   }
 
   function refreshRuleCodeField() {
-    ruleCodeField.value = encodeRule(app.numStates, app.table);
+    ruleCodeField.value = encodeRule(app.numStates, app.table, app.numNeighbors);
+  }
+
+  function setNeighborhoodModeUI(numNeighbors) {
+    app.setNeighborhoodMode(numNeighbors);
+    for (const [n, button] of neighborhoodButtons) {
+      button.classList.toggle("active", n === numNeighbors);
+    }
+    rebuildPresetOptions();
+    presetSelect.value = app.currentPresetCode ?? "";
+    statesInput.value = String(app.numStates);
+    refreshRuleCodeField();
+    rebuildPaintSwatches();
+    setRuleStatus(`Switched to ${numNeighbors}-neighbor mode; applied its default preset.`);
   }
 
   function rgbToCss(r, g, b) {
@@ -172,12 +191,16 @@ export function wireControls(app) {
   modePaintButton.addEventListener("click", () => setInteractionModeUI("paint"));
   modePlaceButton.addEventListener("click", () => setInteractionModeUI("place"));
 
+  for (const [n, button] of neighborhoodButtons) {
+    button.addEventListener("click", () => setNeighborhoodModeUI(n));
+  }
+
   presetSelect.addEventListener("change", () => {
-    const preset = PRESETS.find((p) => p.code === presetSelect.value);
+    const preset = presetsFor(app.numNeighbors).find((p) => p.code === presetSelect.value);
     if (!preset) return;
     try {
-      const { numStates, table } = decodeRule(preset.code);
-      app.applyRule(numStates, table, preset.code);
+      const { numStates, numNeighbors, table } = decodeRule(preset.code);
+      app.applyRule(numStates, table, numNeighbors, preset.code);
       statesInput.value = String(numStates);
       refreshRuleCodeField();
       rebuildPaintSwatches();
@@ -190,12 +213,12 @@ export function wireControls(app) {
   randomizeButton.addEventListener("click", () => {
     const numStates = Number(statesInput.value);
     try {
-      const table = randomTable(numStates, Math.random);
-      app.applyRule(numStates, table);
+      const table = randomTable(numStates, app.numNeighbors, Math.random);
+      app.applyRule(numStates, table, app.numNeighbors);
       presetSelect.value = "";
       refreshRuleCodeField();
       rebuildPaintSwatches();
-      setRuleStatus(`Random ${numStates}-state rule (${tableSize(numStates)}-entry table) applied.`);
+      setRuleStatus(`Random ${numStates}-state, ${app.numNeighbors}-neighbor rule (${tableSize(numStates, app.numNeighbors)}-entry table) applied.`);
     } catch (error) {
       setRuleStatus(error.message, true);
     }
@@ -214,12 +237,14 @@ export function wireControls(app) {
 
   function applyTypedCode() {
     try {
-      const { numStates, table } = decodeRule(ruleCodeField.value);
-      app.applyRule(numStates, table);
+      const { numStates, numNeighbors, table } = decodeRule(ruleCodeField.value);
+      app.applyRule(numStates, table, numNeighbors);
       statesInput.value = String(numStates);
+      for (const [n, button] of neighborhoodButtons) button.classList.toggle("active", n === numNeighbors);
+      rebuildPresetOptions();
       presetSelect.value = "";
       rebuildPaintSwatches();
-      setRuleStatus(`Applied rule code (${numStates} states).`);
+      setRuleStatus(`Applied rule code (${numStates} states, ${numNeighbors} neighbors).`);
     } catch (error) {
       setRuleStatus(error.message, true);
     }
@@ -235,9 +260,9 @@ export function wireControls(app) {
 
   function shiftRule(delta) {
     try {
-      const shifted = shiftRuleNumber(encodeRule(app.numStates, app.table), delta);
-      const { numStates, table } = decodeRule(shifted);
-      app.applyRule(numStates, table);
+      const shifted = shiftRuleNumber(encodeRule(app.numStates, app.table, app.numNeighbors), delta);
+      const { numStates, numNeighbors, table } = decodeRule(shifted);
+      app.applyRule(numStates, table, numNeighbors);
       presetSelect.value = "";
       refreshRuleCodeField();
       rebuildPaintSwatches();
@@ -278,6 +303,7 @@ export function wireControls(app) {
   };
 
   // Initial UI state.
+  for (const [n, button] of neighborhoodButtons) button.classList.toggle("active", n === app.numNeighbors);
   presetSelect.value = app.currentPresetCode ?? "";
   statesInput.value = String(app.numStates);
   refreshRuleCodeField();

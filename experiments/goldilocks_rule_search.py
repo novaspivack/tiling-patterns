@@ -13,14 +13,17 @@ vetting (see `experiments/render_rule_preview.py`) before promoting any to
 `web/js/presets.js`.
 
 Run: `python experiments/goldilocks_rule_search.py`
+Run (16-neighbor "edge+vertex" mode): `python experiments/goldilocks_rule_search.py --num-neighbors 16`
 """
 
 from __future__ import annotations
 
+import argparse
 import random
 import time
 
 from tiling_patterns.outer_totalistic import (
+    DEFAULT_NUM_NEIGHBORS,
     Grid,
     RuleTable,
     ToroidalGrid,
@@ -41,12 +44,12 @@ CHAOTIC_MIN_ACTIVITY = 0.35  # at/above this trailing activity, the rule likely 
 FLAT_MAX_ENTROPY = 0.25  # at/below this final-state entropy, the rule collapsed to ~one color
 
 
-def run_rule(num_states: int, table: RuleTable, rng: random.Random) -> tuple[list[float], Grid]:
+def run_rule(num_states: int, table: RuleTable, num_neighbors: int, rng: random.Random) -> tuple[list[float], Grid]:
     grid_shape = ToroidalGrid(GRID_SIZE, GRID_SIZE)
     grid = grid_shape.seed_random(num_states, rng)
     activities = []
     for _ in range(GENERATIONS):
-        next_grid = step(grid, num_states, table)
+        next_grid = step(grid, num_states, table, num_neighbors)
         activities.append(activity_fraction(grid, next_grid))
         grid = next_grid
     return activities, grid
@@ -67,29 +70,35 @@ def goldilocks_score(mean_tail_activity: float, final_entropy: float) -> float:
     return 0.5 * activity_term + 0.5 * final_entropy
 
 
-def search(num_states: int, trials: int, base_seed: int) -> list[tuple[float, str, float, float]]:
+def search(num_states: int, num_neighbors: int, trials: int, base_seed: int) -> list[tuple[float, str, float, float]]:
     results = []
     for trial in range(trials):
         seed = base_seed * 1_000_003 + trial
-        table = random_table(num_states, random.Random(seed))
-        activities, final_grid = run_rule(num_states, table, random.Random(seed + 1))
+        table = random_table(num_states, random.Random(seed), num_neighbors)
+        activities, final_grid = run_rule(num_states, table, num_neighbors, random.Random(seed + 1))
         tail = activities[int(GENERATIONS * BURN_IN_FRACTION) :]
         mean_tail_activity = sum(tail) / len(tail)
         final_entropy = state_entropy(final_grid, num_states)
         score = goldilocks_score(mean_tail_activity, final_entropy)
-        code = encode_rule(num_states, table)
+        code = encode_rule(num_states, table, num_neighbors)
         results.append((score, code, mean_tail_activity, final_entropy))
     results.sort(key=lambda entry: entry[0], reverse=True)
     return results
 
 
 def main() -> None:
-    for num_states in (2, 3, 4, 5):
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--num-neighbors", type=int, default=DEFAULT_NUM_NEIGHBORS, choices=(3, 16))
+    parser.add_argument("--states", type=int, nargs="+", default=[2, 3, 4, 5])
+    parser.add_argument("--trials", type=int, default=TRIALS_PER_STATE_COUNT)
+    args = parser.parse_args()
+
+    for num_states in args.states:
         started = time.perf_counter()
-        results = search(num_states, trials=TRIALS_PER_STATE_COUNT, base_seed=num_states)
+        results = search(num_states, args.num_neighbors, trials=args.trials, base_seed=num_states)
         elapsed = time.perf_counter() - started
         promising = [r for r in results if r[0] > 0]
-        print(f"=== {num_states}-state rules: {len(promising)}/{TRIALS_PER_STATE_COUNT} promising ({elapsed:.1f}s) ===")
+        print(f"=== {num_states}-state, {args.num_neighbors}-neighbor rules: {len(promising)}/{args.trials} promising ({elapsed:.1f}s) ===")
         for score, code, activity, entropy in results[:10]:
             print(f"  score={score:+.3f} tail_activity={activity:.3f} final_entropy={entropy:.3f} code={code}")
         print()

@@ -9,7 +9,10 @@
   <body>
     <canvas id="grid-canvas"></canvas>
 
-    <div id="startup-warning" class="startup-warning" hidden></div>
+    <div id="startup-warning" class="startup-warning" hidden>
+      <button id="startup-warning-close" class="startup-warning-close" title="Dismiss">✕</button>
+      <div id="startup-warning-message"></div>
+    </div>
 
     <button id="panel-open-button" class="floating-button" title="Show controls">☰</button>
 
@@ -76,6 +79,15 @@
       </section>
 
       <section>
+        <h2>Neighborhood</h2>
+        <div class="row">
+          <button id="neighborhood-3-button" class="mode-button active" title="Each triangle's 3 edge-adjacent neighbors">Edge (3)</button>
+          <button id="neighborhood-16-button" class="mode-button" title="The 3 edge-neighbors plus every other cell sharing one of the triangle's 3 vertices (9 same-hex + 4 cross-hex)">Edge + Vertex (16)</button>
+        </div>
+        <p class="hint">Switching neighborhoods applies that neighborhood's default preset — a rule number means a completely different rule under a different neighborhood, so old rules don't carry over as-is.</p>
+      </section>
+
+      <section>
         <label for="preset-select">Rule presets</label>
         <select id="preset-select"></select>
       </section>
@@ -121,20 +133,22 @@
       // Plain (non-module) script so it runs even if the module graph below
       // fails entirely — surfaces the two most common "blank black screen,
       // nothing works" causes as a visible on-page message instead of a
-      // silent failure only visible in the browser console.
+      // silent failure only visible in the browser console. Never shows
+      // speculatively for something that might be fine (e.g. some browsers
+      // *do* allow file:// module loading) — only for a confirmed failure
+      // (a real thrown error) or the app simply never starting within a
+      // few seconds, and it is always dismissable either way.
       (function () {
         var banner = document.getElementById("startup-warning");
+        var messageEl = document.getElementById("startup-warning-message");
+        var closeButton = document.getElementById("startup-warning-close");
+        closeButton.addEventListener("click", function () {
+          banner.hidden = true;
+        });
         function showWarning(html) {
-          banner.innerHTML = html;
+          if (window.__appStarted) return; // confirmed running by the time this fires; nothing to report
+          messageEl.innerHTML = html;
           banner.hidden = false;
-        }
-        if (location.protocol === "file:") {
-          showWarning(
-            "This app uses ES module imports, which browsers block from <code>file://</code> pages (CORS). " +
-              "Serve it over HTTP instead:<br><code>cd web &amp;&amp; python3 -m http.server 8000</code><br>then open " +
-              "<code>http://localhost:8000/</code>.",
-          );
-          return;
         }
         if (!window.WebGL2RenderingContext) {
           showWarning("This browser does not support WebGL2, which this app requires. Try a recent Chrome, Firefox, or Edge.");
@@ -152,6 +166,19 @@
           var reason = event.reason && event.reason.message ? event.reason.message : String(event.reason);
           showWarning("App failed to start: <code>" + reason + "</code>. Check the browser console for details.");
         });
+        // No thrown error, but also never actually started (e.g. a browser
+        // that silently no-ops a blocked file:// module fetch instead of
+        // firing an error event) — only *now* is file:// worth mentioning,
+        // as one possible cause among others, not a certain diagnosis.
+        setTimeout(function () {
+          if (window.__appStarted) return;
+          showWarning(
+            "App did not start within a few seconds, and the console shows no error. If you opened this file directly " +
+              "(a <code>file://</code> URL), some browsers block the ES module imports this app uses — try serving it over " +
+              "HTTP instead:<br><code>cd web &amp;&amp; python3 -m http.server 8000</code><br>then open " +
+              "<code>http://localhost:8000/</code>. Otherwise, check the browser console for details.",
+          );
+        }, 4000);
       })();
     </script>
     <script type="module" src="js/main.js"></script>

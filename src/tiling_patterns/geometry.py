@@ -176,6 +176,40 @@ def neighbors(address: CellAddress, edge_length: float, epsilon: float | None = 
     return results
 
 
+def vertex_neighbors(address: CellAddress, edge_length: float, epsilon: float | None = None) -> list[CellAddress]:
+    """Cells that share a vertex with `address` but not a full edge (see `neighbors`).
+
+    Every fundamental triangle has 3 vertices, each shared by several other
+    triangles besides the 3 edge-neighbors — the same conceptual step from a
+    square grid's von-Neumann (edge-only) to Moore (edge + corner)
+    neighborhood. Found the same way `neighbors` finds edge-neighbors: probe
+    a ring of points at a tiny radius around each vertex (at enough angles
+    to land in every wedge meeting there) and fold each probe back to a
+    cell address, rather than deriving the index arithmetic by hand — errors
+    in that arithmetic are easy to make and hard to notice, while this is
+    directly checkable (see `tests/test_geometry.py` for the exact counts
+    this produces and the symmetry checks on them).
+    """
+    if epsilon is None:
+        epsilon = edge_length * 1e-4
+    o, m, v = sector_corners(address.sector, edge_length)
+    hx, hy = hex_center(address.hex, edge_length)
+    excluded = {(n.hex.q, n.hex.r, n.sector) for n in neighbors(address, edge_length)}
+    excluded.add((address.hex.q, address.hex.r, address.sector))
+    found: dict[tuple[int, int, int], CellAddress] = {}
+    num_probe_angles = 48  # finer than the smallest wedge angle meeting at any of the 3 vertex kinds
+    for vertex_local in (o, m, v):
+        vx, vy = hx + vertex_local[0], hy + vertex_local[1]
+        for k in range(num_probe_angles):
+            angle = 2.0 * math.pi * k / num_probe_angles
+            probe = (vx + epsilon * math.cos(angle), vy + epsilon * math.sin(angle))
+            neighbor_addr, _, _ = fold_to_fundamental(probe, edge_length)
+            key = (neighbor_addr.hex.q, neighbor_addr.hex.r, neighbor_addr.sector)
+            if key not in excluded:
+                found[key] = neighbor_addr
+    return list(found.values())
+
+
 def level_edge_length(base_edge_length: float, level: int) -> float:
     """Hexagon edge length at refinement `level` (0 = coarsest)."""
     return base_edge_length * (_LEVEL_SCALE_STEP**level)

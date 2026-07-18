@@ -115,7 +115,7 @@ def main() -> None:
     if len(sys.argv) != 2:
         raise SystemExit("usage: python experiments/explore_rule_neighborhood.py <ruleCode>")
     base_code = sys.argv[1]
-    num_states, base_table = decode_rule(base_code)
+    num_states, _num_neighbors, base_table = decode_rule(base_code)
     size = table_size(num_states)
 
     base_score, base_activity, base_entropy = living_equilibrium_score(num_states, base_table, seed=1)

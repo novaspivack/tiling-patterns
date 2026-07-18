@@ -29,8 +29,8 @@ GRID_SIZE = 40
 GENERATIONS = 150
 
 
-def classify_table(num_states: int, table) -> None:
-    max_sum = max_neighbor_sum(num_states)
+def classify_table(num_states: int, table, num_neighbors: int) -> None:
+    max_sum = max_neighbor_sum(num_states, num_neighbors)
     counts = {"stasis": 0, "advance (+1)": 0, "retreat (-1)": 0, "other": 0}
     print(f"table (rows = own_state 0..{num_states - 1}, cols = neighbor_sum 0..{max_sum}):")
     for own in range(num_states):
@@ -50,20 +50,20 @@ def classify_table(num_states: int, table) -> None:
                 counts["other"] += 1
                 labels.append("?")
         print(f"  own={own}: next={list(row)}  ({' '.join(labels)})")
-    total = table_size(num_states)
+    total = table_size(num_states, num_neighbors)
     print("\nTransition class breakdown (of all table entries, not weighted by how often each is hit):")
     for label, count in counts.items():
         print(f"  {label:14s} {count:3d} / {total} ({100 * count / total:.0f}%)")
 
 
-def run_trajectory(num_states: int, table, seed: int) -> tuple[list[float], list[float]]:
+def run_trajectory(num_states: int, table, num_neighbors: int, seed: int) -> tuple[list[float], list[float]]:
     rng = random.Random(seed)
     grid_shape = ToroidalGrid(GRID_SIZE, GRID_SIZE)
     grid = grid_shape.seed_random(num_states, rng)
     activities = []
     entropies = [state_entropy(grid, num_states)]
     for _ in range(GENERATIONS):
-        next_grid = step(grid, num_states, table)
+        next_grid = step(grid, num_states, table, num_neighbors)
         activities.append(activity_fraction(grid, next_grid))
         grid = next_grid
         entropies.append(state_entropy(grid, num_states))
@@ -74,17 +74,17 @@ def main() -> None:
     if len(sys.argv) != 2:
         raise SystemExit("usage: python experiments/analyze_rule.py <ruleCode>")
     code = sys.argv[1]
-    num_states, table = decode_rule(code)
+    num_states, num_neighbors, table = decode_rule(code)
 
     print(f"=== {code} ===")
-    classify_table(num_states, table)
+    classify_table(num_states, table, num_neighbors)
 
     output_dir = Path(__file__).parent / "output"
     output_dir.mkdir(exist_ok=True)
 
     fig, (ax_activity, ax_entropy) = plt.subplots(2, 1, figsize=(8, 6), sharex=True)
     for seed in range(5):
-        activities, entropies = run_trajectory(num_states, table, seed)
+        activities, entropies = run_trajectory(num_states, table, num_neighbors, seed)
         ax_activity.plot(activities, alpha=0.8, label=f"seed {seed}")
         ax_entropy.plot(entropies, alpha=0.8, label=f"seed {seed}")
     ax_activity.set_ylabel("activity fraction")
