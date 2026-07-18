@@ -464,6 +464,12 @@ export const PRESETS_16 = [
       "3-state; genuinely borderline — with the app's default sparse seed it slowly dies out toward near-zero activity (~2.5% at gen 100, under 1% by gen 500, over 99% state 0), but the small residual minority-color population never quite vanishes across repeated seeds — right at the edge between living and frozen.",
   },
   {
+    name: "Strobing Vertex Triad",
+    code: "K3N16R463547315739496231538077736178591",
+    description:
+      "3-state; near-total per-generation change (~97% of cells differ every single step), but this is a synchronized flicker, not decorrelating turbulence — cells 2/4/6 steps apart differ by only ~5-20%, so most of the grid is locked in a fast, globally-synchronized 2-phase strobe between two of the three colors, layered over a third color's more slowly-drifting, semi-stable skeleton. Reads as a stable underlying structure with the other two colors flickering across it every generation, rather than a boiling/churning turbulence. Balanced overall mix (~50%/33%/17%) and high entropy (~0.92) throughout.",
+  },
+  {
     name: "Vertex Quartet",
     code: "K4N16R8074722502326595458059341820121109397250800631134857891122471857963950706668180543119754287752182043860075181252508120",
     description:
