@@ -437,6 +437,33 @@ export const PRESETS_16 = [
     description: "3-state; collapses completely to a single uniform color within the first few generations (0% activity throughout the test) — included for completeness, not as a living pick.",
   },
   {
+    name: "Edge-of-Chaos Vertex Field",
+    code: "K3N16R3924700606594348935592991799117591",
+    description:
+      "3-state; stable living equilibrium at ~30% settled activity, but with a strongly asymmetric state mix (from the app's default sparse seed) — ~83% state 0, ~5% state 1, ~12% state 2 — a large dominant background color with small, persistent minority-color populations at the edge of dying out, rather than an even 3-way split.",
+  },
+  {
+    name: "Edge-of-Chaos Vertex Field (variant A)",
+    code: "K3N16R3708378525915920576791759941271089",
+    description: "3-state; same asymmetric-minority-color character as Edge-of-Chaos Vertex Field — ~27% settled activity, ~85% state 0, ~5% state 1, ~11% state 2.",
+  },
+  {
+    name: "Edge-of-Chaos Vertex Field (variant B)",
+    code: "K3N16R463547315739496228758547452900837",
+    description: "3-state; same character, with an even smaller minority-color population — ~26% settled activity, ~86% state 0, ~3.6% state 1, ~10% state 2.",
+  },
+  {
+    name: "Edge-of-Chaos Vertex Field (variant C)",
+    code: "K3N16R229764952834873481827613120564297256",
+    description: "3-state; same asymmetric character but with larger, more balanced minority populations — ~32% settled activity, ~78% state 0, ~11% state 1, ~11% state 2.",
+  },
+  {
+    name: "Edge-of-Chaos Vertex Field (unstable variant)",
+    code: "K3N16R4450054231099096180116572419708437",
+    description:
+      "3-state; genuinely borderline — with the app's default sparse seed it slowly dies out toward near-zero activity (~2.5% at gen 100, under 1% by gen 500, over 99% state 0), but the small residual minority-color population never quite vanishes across repeated seeds — right at the edge between living and frozen.",
+  },
+  {
     name: "Vertex Quartet",
     code: "K4N16R8074722502326595458059341820121109397250800631134857891122471857963950706668180543119754287752182043860075181252508120",
     description:

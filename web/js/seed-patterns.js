@@ -19,7 +19,16 @@ export const SEED_PATTERNS = [
   { id: "twin-blooms", name: "Twin blooms (two seeds)" },
   { id: "checkerboard", name: "Checkerboard field" },
   { id: "random-island", name: "Random island (density-settable)" },
+  { id: "random-ultra-sparse-1", name: "Ultra-sparse scatter (0.5%)" },
+  { id: "random-ultra-sparse-2", name: "Ultra-sparse scatter (0.2%)" },
+  { id: "random-ultra-sparse-3", name: "Ultra-sparse scatter (0.05%)" },
 ];
+
+// Fixed densities for the "ultra-sparse scatter" presets above — deliberately
+// well below DEFAULT_DENSITY, for testing how a rule nucleates/grows (or
+// doesn't) from a near-empty field rather than the default's already-fairly-
+// visible scatter.
+const ULTRA_SPARSE_DENSITY = { "random-ultra-sparse-1": 0.005, "random-ultra-sparse-2": 0.002, "random-ultra-sparse-3": 0.0005 };
 
 export const DEFAULT_SEED_PATTERN_ID = "random";
 export const DEFAULT_DENSITY = 0.02;
@@ -112,6 +121,11 @@ export function applySeedPatternAt(engine, patternId, centerQ, centerR, { densit
   switch (patternId) {
     case "random":
       engine.seedRandom(density);
+      return;
+    case "random-ultra-sparse-1":
+    case "random-ultra-sparse-2":
+    case "random-ultra-sparse-3":
+      engine.seedRandom(ULTRA_SPARSE_DENSITY[patternId]);
       return;
     case "blank":
       engine.fillConstant(0);
