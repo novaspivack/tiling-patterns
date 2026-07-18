@@ -57,6 +57,7 @@ export function wireControls(app) {
   const advancedRuleCodeField = document.getElementById("advanced-rule-code-field");
   const advancedCopyCodeButton = document.getElementById("advanced-copy-code-button");
   const randomizeUnpinnedButton = document.getElementById("randomize-unpinned-button");
+  const advancedResetGridButton = document.getElementById("advanced-reset-grid-button");
   let advancedViewVisible = false;
 
   const paletteSelect = document.getElementById("palette-select");
@@ -497,6 +498,10 @@ export function wireControls(app) {
     presetSelect.value = "";
     setRuleStatus(`Randomized ${app.numStates - app.pinnedStates.size} unpinned color(s) and reseeded; kept ${app.pinnedStates.size} pinned color(s) unchanged.`);
   });
+
+  // Convenience duplicate of the top toolbar's Reset button, so a fresh seed
+  // is one click away while iterating on rule rows without scrolling back up.
+  advancedResetGridButton.addEventListener("click", () => app.reseed());
 
   advancedCopyCodeButton.addEventListener("click", async () => {
     refreshAdvancedRuleCodeField();
