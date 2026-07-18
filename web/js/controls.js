@@ -3,7 +3,7 @@
 // (randomize, encode + copy, paste + apply), palette dropdown, screenshot
 // button, and panel show/hide. Pure DOM glue — no WebGL here.
 
-import { MAX_STATES, MIN_STATES, NUM_NEIGHBORS_OPTIONS, decodeRule, encodeRule, randomTable, shiftRuleNumber, tableSize } from "./rule.js";
+import { MAX_STATES, MIN_STATES, NUM_NEIGHBORS_OPTIONS, classifyRow, decodeRule, encodeRule, randomTable, shiftRuleNumber, tableSize } from "./rule.js";
 import { presetsFor } from "./presets.js";
 import { PALETTES } from "./palette.js";
 import { SEED_PATTERNS, isPlaceablePattern, isDensityAdjustablePattern } from "./seed-patterns.js";
@@ -47,7 +47,17 @@ export function wireControls(app) {
   const ruleDecrementButton = document.getElementById("rule-decrement-button");
   const copyCodeButton = document.getElementById("copy-code-button");
   const applyCodeButton = document.getElementById("apply-code-button");
+  const resetRuleButton = document.getElementById("reset-rule-button");
   const ruleStatusLabel = document.getElementById("rule-status-label");
+
+  const advancedViewToggle = document.getElementById("advanced-view-toggle");
+  const advancedRuleRows = document.getElementById("advanced-rule-rows");
+  const advancedRuleActions = document.getElementById("advanced-rule-actions");
+  const advancedRuleActions2 = document.getElementById("advanced-rule-actions-2");
+  const advancedRuleCodeField = document.getElementById("advanced-rule-code-field");
+  const advancedCopyCodeButton = document.getElementById("advanced-copy-code-button");
+  const randomizeUnpinnedButton = document.getElementById("randomize-unpinned-button");
+  let advancedViewVisible = false;
 
   const paletteSelect = document.getElementById("palette-select");
   const screenshotButton = document.getElementById("screenshot-button");
@@ -90,6 +100,11 @@ export function wireControls(app) {
     ruleCodeField.value = encodeRule(app.numStates, app.table, app.numNeighbors);
   }
 
+  function refreshAdvancedRuleCodeField() {
+    if (!advancedViewVisible) return;
+    advancedRuleCodeField.value = encodeRule(app.numStates, app.table, app.numNeighbors);
+  }
+
   function setNeighborhoodModeUI(numNeighbors) {
     app.setNeighborhoodMode(numNeighbors);
     for (const [n, button] of neighborhoodButtons) {
@@ -123,6 +138,105 @@ export function wireControls(app) {
       });
       paintSwatchesContainer.appendChild(swatch);
     }
+  }
+
+  // One entry per state, reused across updates so a row's own buttons are
+  // never destroyed while the user might be actively pressing/holding one
+  // of them — only `ensureAdvancedRuleRowElements` (row *count* changed)
+  // tears down and recreates DOM nodes; every other rule change just
+  // updates existing nodes' colors/widths/titles in place. Recreating a
+  // held button's DOM node mid-press is exactly what caused an earlier bug
+  // where a row's press-and-hold acceleration never stopped: the button
+  // got detached from the document before its `pointerup` could ever
+  // reach it, so the accelerating repeat interval ran forever.
+  let advancedRuleRowRefs = [];
+
+  function ensureAdvancedRuleRowElements(numStates) {
+    if (advancedRuleRowRefs.length === numStates) return;
+    advancedRuleRows.innerHTML = "";
+    advancedRuleRowRefs = [];
+    for (let state = 0; state < numStates; state++) {
+      const rowEl = document.createElement("div");
+      rowEl.className = "advanced-rule-row";
+
+      const swatch = document.createElement("span");
+      swatch.className = "swatch";
+      rowEl.appendChild(swatch);
+
+      const pinButton = document.createElement("button");
+      pinButton.className = "pin-button";
+      pinButton.addEventListener("click", () => {
+        app.togglePinnedState(state);
+        updateAdvancedRuleRowContents();
+      });
+      rowEl.appendChild(pinButton);
+
+      const resetButton = document.createElement("button");
+      resetButton.className = "row-step-button";
+      resetButton.title = `Reset color ${state}'s row to 0 (all-stasis)`;
+      resetButton.textContent = "0";
+      resetButton.addEventListener("click", () => app.resetStateRowToZero(state));
+      rowEl.appendChild(resetButton);
+
+      const decButton = document.createElement("button");
+      decButton.className = "row-step-button";
+      decButton.title = `Push color ${state}'s whole row down one color (cyclic; hold to repeat)`;
+      decButton.textContent = "▼";
+      wireHoldToAccelerate(decButton, -1, (delta) => app.cycleStateRow(state, delta));
+      rowEl.appendChild(decButton);
+
+      const incButton = document.createElement("button");
+      incButton.className = "row-step-button";
+      incButton.title = `Push color ${state}'s whole row up one color (cyclic; hold to repeat)`;
+      incButton.textContent = "▲";
+      wireHoldToAccelerate(incButton, 1, (delta) => app.cycleStateRow(state, delta));
+      rowEl.appendChild(incButton);
+
+      const bar = document.createElement("div");
+      bar.className = "row-bar";
+      rowEl.appendChild(bar);
+
+      advancedRuleRows.appendChild(rowEl);
+      advancedRuleRowRefs.push({ swatch, pinButton, bar });
+    }
+  }
+
+  function updateAdvancedRuleRowContents() {
+    const palette = app.paletteData;
+    for (let state = 0; state < advancedRuleRowRefs.length; state++) {
+      const { swatch, pinButton, bar } = advancedRuleRowRefs[state];
+      const { counts } = classifyRow(app.table, app.numStates, app.numNeighbors, state);
+      const total = counts.stasis + counts.advance + counts.retreat + counts.other;
+      const isPinned = app.pinnedStates.has(state);
+
+      swatch.style.background = rgbToCss(palette[state * 3], palette[state * 3 + 1], palette[state * 3 + 2]);
+      swatch.textContent = String(state);
+
+      pinButton.className = `pin-button${isPinned ? " pinned" : ""}`;
+      pinButton.title = isPinned
+        ? `Color ${state} is pinned (its row is frozen) — click to unpin`
+        : `Color ${state} is not pinned — click to pin (freeze its row)`;
+      pinButton.textContent = isPinned ? "Pinned" : "Pin";
+
+      // The bar's own segment <div>s are never interactive (no listeners,
+      // no press-and-hold state), so rebuilding them on every update is
+      // safe — only the row's buttons need identity to survive a rebuild.
+      bar.innerHTML = "";
+      for (const key of ["stasis", "advance", "retreat", "other"]) {
+        if (counts[key] === 0) continue;
+        const segment = document.createElement("div");
+        segment.className = `row-bar-segment ${key}`;
+        segment.style.width = `${(100 * counts[key]) / total}%`;
+        segment.title = `${key}: ${counts[key]}/${total}`;
+        bar.appendChild(segment);
+      }
+    }
+  }
+
+  function rebuildAdvancedRuleView() {
+    if (!advancedViewVisible) return;
+    ensureAdvancedRuleRowElements(app.numStates);
+    updateAdvancedRuleRowContents();
   }
 
   function updateDensityVisibility() {
@@ -266,25 +380,139 @@ export function wireControls(app) {
       presetSelect.value = "";
       refreshRuleCodeField();
       rebuildPaintSwatches();
-      setRuleStatus(`Rule number ${delta > 0 ? "incremented" : "decremented"}.`);
+      setRuleStatus(`Rule number ${delta > 0 ? "incremented" : "decremented"} by ${Math.abs(delta)}.`);
     } catch (error) {
       setRuleStatus(error.message, true);
     }
   }
-  ruleIncrementButton.addEventListener("click", () => shiftRule(1));
-  ruleDecrementButton.addEventListener("click", () => shiftRule(-1));
+  // Press-and-hold accelerates: a quick tap steps by 1, but holding ramps
+  // the step size up the longer the button stays held (1 -> 10 -> 100 ->
+  // 1,000 -> 10,000 -> 100,000 -> 1,000,000 -> 10,000,000), so exploring
+  // rule space by large jumps doesn't require thousands of individual
+  // clicks. `shiftRuleNumber`/`shiftRow` (rule.js) already clamp at their
+  // own maximum, so a step this large is harmless on a small table/row (it
+  // just saturates at 0 or the max) — "large enough" rules/rows are simply
+  // the ones where a big jump is *visibly* useful rather than clamping
+  // away. Reused for both the global rule number and each advanced-view
+  // row's own number — `applyStep(signedStep)` is whatever "shift by this
+  // signed amount" means in that context.
+  function wireHoldToAccelerate(button, direction, applyStep) {
+    let holdTimeoutId = null;
+    let repeatIntervalId = null;
+    let holdStartTime = null;
+
+    function stepSizeForElapsed(elapsedMs) {
+      if (elapsedMs > 24000) return 10000000;
+      if (elapsedMs > 20000) return 1000000;
+      if (elapsedMs > 16000) return 100000;
+      if (elapsedMs > 8000) return 10000;
+      if (elapsedMs > 4000) return 1000;
+      if (elapsedMs > 2000) return 100;
+      if (elapsedMs > 800) return 10;
+      return 1;
+    }
+
+    function stopHold() {
+      if (holdTimeoutId !== null) {
+        clearTimeout(holdTimeoutId);
+        holdTimeoutId = null;
+      }
+      if (repeatIntervalId !== null) {
+        clearInterval(repeatIntervalId);
+        repeatIntervalId = null;
+      }
+      holdStartTime = null;
+    }
+
+    button.addEventListener("pointerdown", (event) => {
+      event.preventDefault();
+      applyStep(direction);
+      holdStartTime = performance.now();
+      holdTimeoutId = setTimeout(() => {
+        repeatIntervalId = setInterval(() => {
+          applyStep(direction * stepSizeForElapsed(performance.now() - holdStartTime));
+        }, 120);
+      }, 400);
+    });
+    button.addEventListener("pointerup", stopHold);
+    button.addEventListener("pointerleave", stopHold);
+    button.addEventListener("pointercancel", stopHold);
+  }
+  wireHoldToAccelerate(ruleIncrementButton, 1, shiftRule);
+  wireHoldToAccelerate(ruleDecrementButton, -1, shiftRule);
 
   statesInput.addEventListener("change", () => {
     const value = Number(statesInput.value);
     if (!Number.isInteger(value) || value < MIN_STATES || value > MAX_STATES) {
       statesInput.value = String(app.numStates);
       setRuleStatus(`States must be an integer in [${MIN_STATES}, ${MAX_STATES}].`, true);
+      return;
     }
+    if (value === app.numStates) return;
+    // A different state count means a completely different table size —
+    // there is no existing table to "carry over" — so this applies a fresh
+    // rule immediately, rather than leaving the advanced view/rule code
+    // showing the *previous* state count's rule until Randomize is
+    // clicked. A *random* table (not all-zero/all-stasis) matters here:
+    // an all-stasis table makes every cell collapse to state 0 within a
+    // single running generation regardless of what the grid currently
+    // shows, which looked like "changing states makes the grid go solid"
+    // — reseeding alone would not have fixed that, since the very next
+    // frame would collapse it again.
+    const table = randomTable(value, app.numNeighbors, Math.random);
+    app.applyRule(value, table, app.numNeighbors);
+    app.reseed();
+    presetSelect.value = "";
+    setRuleStatus(`Switched to ${value} states with a fresh random rule and seed.`);
   });
 
   paletteSelect.addEventListener("change", () => {
     app.setPalette(paletteSelect.value);
     rebuildPaintSwatches();
+  });
+
+  advancedViewToggle.addEventListener("click", () => {
+    advancedViewVisible = !advancedViewVisible;
+    advancedViewToggle.textContent = advancedViewVisible ? "Hide" : "Show";
+    advancedRuleRows.hidden = !advancedViewVisible;
+    advancedRuleActions.hidden = !advancedViewVisible;
+    advancedRuleActions2.hidden = !advancedViewVisible;
+    refreshAdvancedRuleCodeField();
+    rebuildAdvancedRuleView();
+  });
+
+  randomizeUnpinnedButton.addEventListener("click", () => {
+    if (app.pinnedStates.size >= app.numStates) {
+      setRuleStatus("Every color is pinned — nothing left to randomize.", true);
+      return;
+    }
+    app.randomizeUnpinnedRows();
+    // Also reseeds: whatever the grid currently shows may already have
+    // drained toward a state the *previous* rule favored (e.g. if a pinned
+    // row happens to be all-stasis, that state is an absorbing sink and the
+    // grid trends toward all-solid over time regardless of what the other
+    // rows do) — a fresh seed guarantees this randomize actually looks
+    // "randomized" rather than showing a stale, already-settled grid.
+    app.reseed();
+    presetSelect.value = "";
+    setRuleStatus(`Randomized ${app.numStates - app.pinnedStates.size} unpinned color(s) and reseeded; kept ${app.pinnedStates.size} pinned color(s) unchanged.`);
+  });
+
+  advancedCopyCodeButton.addEventListener("click", async () => {
+    refreshAdvancedRuleCodeField();
+    try {
+      await navigator.clipboard.writeText(advancedRuleCodeField.value);
+      setRuleStatus("Rule code copied to clipboard.");
+    } catch {
+      advancedRuleCodeField.select();
+      setRuleStatus("Clipboard unavailable — code is selected, copy manually with Ctrl/Cmd+C.", true);
+    }
+  });
+
+  resetRuleButton.addEventListener("click", () => {
+    app.resetRuleToZero();
+    presetSelect.value = "";
+    setRuleStatus("Rule reset to 0 (all-stasis, the lowest config).");
   });
 
   screenshotButton.addEventListener("click", () => app.saveScreenshot());
@@ -295,7 +523,9 @@ export function wireControls(app) {
   app.onRuleChange = () => {
     statesInput.value = String(app.numStates);
     refreshRuleCodeField();
+    refreshAdvancedRuleCodeField();
     rebuildPaintSwatches();
+    rebuildAdvancedRuleView();
   };
   app.onStatsUpdate = (entry) => {
     drawStatsGraph(statsCanvas, app.stats.history);
@@ -317,5 +547,7 @@ export function wireControls(app) {
   updateDensityVisibility();
   paletteSelect.value = app.paletteId;
   rebuildPaintSwatches();
+  refreshAdvancedRuleCodeField();
+  rebuildAdvancedRuleView();
   setInteractionModeUI("pan");
 }

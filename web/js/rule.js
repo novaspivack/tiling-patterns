@@ -136,6 +136,160 @@ export function shiftRuleNumber(code, delta) {
   return `K${numStates}N${numNeighbors}R${shifted.toString()}`;
 }
 
+/**
+ * The rule table is naturally block-structured by the cell's *own* current
+ * state: `table[ownState * (maxSum + 1) + neighborSum]` means every entry
+ * for `ownState = s` occupies one contiguous run of `maxSum + 1` entries —
+ * "what happens to a cell currently in state `s`, as a function of its
+ * neighbor sum," entirely independent of every other state's row. This is
+ * what makes it possible to inspect, randomize, or step through just one
+ * state's behavior while holding every other state's row fixed (e.g. to
+ * design a rule where one color tends to clump — mostly `stasis`/`retreat`
+ * transitions in its row — while another tends to spread — mostly
+ * `advance` transitions in its row).
+ */
+export function rowBounds(numStates, numNeighbors, ownState) {
+  const rowLength = maxNeighborSum(numStates, numNeighbors) + 1;
+  return { start: ownState * rowLength, length: rowLength };
+}
+
+/** The `(maxSum + 1)`-entry slice of `table` governing transitions out of `ownState`. */
+export function getRow(table, numStates, numNeighbors, ownState) {
+  const { start, length } = rowBounds(numStates, numNeighbors, ownState);
+  return table.slice(start, start + length);
+}
+
+/** `table` with `ownState`'s row replaced by `rowValues` (all other rows untouched); returns a new array. */
+export function setRow(table, numStates, numNeighbors, ownState, rowValues) {
+  const { start, length } = rowBounds(numStates, numNeighbors, ownState);
+  if (rowValues.length !== length) {
+    throw new Error(`row for state ${ownState} must have ${length} entries, got ${rowValues.length}`);
+  }
+  const next = table.slice();
+  next.set(rowValues, start);
+  return next;
+}
+
+/**
+ * `table` with only the rows in `statesToRandomize` (a `Set`/array of own-state
+ * indices) replaced by fresh random values — every other row (typically the
+ * "pinned" ones) is copied through unchanged. This is the "randomize
+ * unpinned colors only" operation: pin a color's row in the UI, and
+ * Randomize only ever touches the rest.
+ */
+export function randomizeRows(table, numStates, numNeighbors, statesToRandomize, rng = Math.random) {
+  const targets = new Set(statesToRandomize);
+  const next = table.slice();
+  for (const ownState of targets) {
+    const { start, length } = rowBounds(numStates, numNeighbors, ownState);
+    for (let i = 0; i < length; i++) {
+      next[start + i] = Math.floor(rng() * numStates);
+    }
+  }
+  return next;
+}
+
+/**
+ * `table` with `ownState`'s row shifted by `delta`, treating just that row's
+ * entries as their own little-endian base-`numStates` numeral (independent
+ * of every other row) — the row-scoped analog of `shiftRuleNumber`, letting
+ * the UI tick through variations of one color's behavior without touching
+ * any other color's row. Clamped to that row's own valid range. Note this
+ * is a "raw numeral" nudge, not a uniform one — because incrementing a
+ * multi-digit numeral by 1 can carry (e.g. `...333 + 1 = ...000` in base 4),
+ * a single `delta = 1` step usually changes only the row's first entry
+ * (the `neighborSum = 0` transition), but occasionally cascades and changes
+ * many entries at once. For a uniform, always-predictable "push this
+ * color's whole behavior up or down" operation, see `cycleRow` instead.
+ */
+export function shiftRow(table, numStates, numNeighbors, ownState, delta) {
+  const { start, length } = rowBounds(numStates, numNeighbors, ownState);
+  const base = BigInt(numStates);
+  let rowNumber = 0n;
+  for (let i = length - 1; i >= 0; i--) {
+    rowNumber = rowNumber * base + BigInt(table[start + i]);
+  }
+  const maxRowNumber = base ** BigInt(length) - 1n;
+  let shifted = rowNumber + BigInt(delta);
+  if (shifted < 0n) shifted = 0n;
+  if (shifted > maxRowNumber) shifted = maxRowNumber;
+  const next = table.slice();
+  for (let i = 0; i < length; i++) {
+    next[start + i] = Number(shifted % base);
+    shifted /= base;
+  }
+  return next;
+}
+
+/**
+ * `table` with every entry of `ownState`'s row advanced (`delta > 0`) or
+ * retreated (`delta < 0`) by `|delta|` colors, cyclically (mod `numStates`)
+ * — e.g. `delta = 1` turns every "stay the same" entry in this row into
+ * "advance to the next color," every "advance" entry into "advance twice,"
+ * and so on, uniformly across the whole row. This is the "push this
+ * color's whole behavior up or down" operation: unlike `shiftRow` (which
+ * nudges the row's *raw encoded number*, and can carry unpredictably), this
+ * always changes every entry in the row by exactly the same amount, so its
+ * effect on the row's stasis/advance/retreat mix (see `classifyRow`) is
+ * exact and predictable — and since it is inherently cyclic with period
+ * `numStates`, shifting by a multiple of `numStates` is a no-op by
+ * construction, not a bug.
+ */
+export function cycleRow(table, numStates, numNeighbors, ownState, delta) {
+  const { start, length } = rowBounds(numStates, numNeighbors, ownState);
+  const shift = ((delta % numStates) + numStates) % numStates;
+  const next = table.slice();
+  for (let i = 0; i < length; i++) {
+    next[start + i] = (next[start + i] + shift) % numStates;
+  }
+  return next;
+}
+
+/**
+ * Classifies every entry of `ownState`'s row as `"stasis"` (next == own),
+ * `"advance"` (next == own + 1 mod k), `"retreat"` (next == own - 1 mod k),
+ * or `"other"` — the same breakdown `experiments/analyze_rule.py`'s
+ * `classify_table` prints to the terminal, surfaced here for the browser's
+ * advanced rule view. A row dominated by `stasis`/`retreat` tends to hold
+ * its color in place ("clumpy"); one dominated by `advance` tends to cycle
+ * through colors quickly, which usually reads visually as that color
+ * spreading/moving rather than sitting still ("mobile").
+ */
+export function classifyRow(table, numStates, numNeighbors, ownState) {
+  const row = getRow(table, numStates, numNeighbors, ownState);
+  const counts = { stasis: 0, advance: 0, retreat: 0, other: 0 };
+  const labels = [];
+  for (const next of row) {
+    if (next === ownState) {
+      counts.stasis++;
+      labels.push("stasis");
+    } else if (next === (ownState + 1) % numStates) {
+      counts.advance++;
+      labels.push("advance");
+    } else if (next === (ownState - 1 + numStates) % numStates) {
+      counts.retreat++;
+      labels.push("retreat");
+    } else {
+      counts.other++;
+      labels.push("other");
+    }
+  }
+  return { row, labels, counts };
+}
+
+/** The all-stasis table (every entry 0, i.e. rule number 0 — the "lowest config") for `numStates`/`numNeighbors`. Every cell stays state 0 forever; a good starting point for "increment slightly to find the critical point" exploration. */
+export function zeroTable(numStates, numNeighbors = DEFAULT_NUM_NEIGHBORS) {
+  return new Uint8Array(tableSize(numStates, numNeighbors));
+}
+
+/** `table` with `ownState`'s row reset to all-zero (independent of every other row) — the row-scoped analog of `zeroTable`. */
+export function zeroRow(table, numStates, numNeighbors, ownState) {
+  const { start, length } = rowBounds(numStates, numNeighbors, ownState);
+  const next = table.slice();
+  next.fill(0, start, start + length);
+  return next;
+}
+
 /** `table`, zero-padded to `MAX_TABLE_SIZE`, as a `Float32Array` ready to upload to the rule lookup texture. */
 export function tableToTextureData(table) {
   const data = new Float32Array(MAX_TABLE_SIZE);

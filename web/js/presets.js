@@ -133,14 +133,344 @@ export const PRESETS_3 = [
 // k=3 with random rules, only ~3/1200 trials were genuinely stable (vs.
 // most of the 3-neighbor default's single-entry mutations landing in its
 // class) — the goldilocks basin here is real but much narrower, and no
-// k=4 trial (0/1200) found a stable living equilibrium at all, so this
-// list currently tops out at 3 states.
+// k=4 trial (0/1200) found a stable living equilibrium at all — but a
+// user-submitted k=4 rule (Vertex Quartet, below) is a genuine stable
+// counterexample, so a 4-state living equilibrium is rare under random
+// search but not impossible. The first entry is the app-wide default
+// neighborhood/rule on startup — see main.js.
 export const PRESETS_16 = [
   {
-    name: "Vertex Rosette Field (default)",
+    name: "Vertex Duet (default)",
+    code: "K2N16R1006017859",
+    description:
+      "2-state (binary); the liveliest of the curated 16-neighbor rules — settled activity holds flat at ~40% of cells changing per generation from generation 100 through at least generation 400, with near-maximal color diversity (97% of max entropy). Dense, sharply-defined orange/blue pinwheel rosettes packed edge-to-edge across the whole field.",
+  },
+  {
+    name: "Vertex Duet (variant A)",
+    code: "K2N16R4184168593",
+    description: "2-state (binary); same genuinely stable living-equilibrium character as Vertex Duet (~36% settled activity, 98% of max entropy), slightly calmer and more blue-dominant.",
+  },
+  {
+    name: "Vertex Duet (variant B)",
+    code: "K2N16R4184168463",
+    description: "2-state (binary); stable living equilibrium at ~27% settled activity with the highest color diversity of this group (99.6% of max entropy) — a finer, more evenly mixed pinwheel texture than the denser Vertex Duet variants.",
+  },
+  {
+    name: "Vertex Duet (variant C)",
+    code: "K2N16R1006017797",
+    description: "2-state (binary); stable living equilibrium at ~32% settled activity with very high color diversity (99.5% of max entropy).",
+  },
+  {
+    name: "Vertex Duet (variant D)",
+    code: "K2N16R4184168584",
+    description: "2-state (binary); stable living equilibrium at ~32% settled activity, 95% of max entropy.",
+  },
+  {
+    name: "Vertex Duet (variant E)",
+    code: "K2N16R4184168321",
+    description: "2-state (binary); stable living equilibrium at ~31% settled activity, 95% of max entropy.",
+  },
+  {
+    name: "Vertex Duet (calmer variant F)",
+    code: "K2N16R4184168471",
+    description: "2-state (binary); calmer stable equilibrium at ~28% settled activity, 98% of max entropy.",
+  },
+  {
+    name: "Vertex Duet (calmer variant G)",
+    code: "K2N16R4184127521",
+    description: "2-state (binary); calmer stable equilibrium at ~27% settled activity, 91% of max entropy.",
+  },
+  {
+    name: "Vertex Duet (calmer variant H)",
+    code: "K2N16R4184168065",
+    description: "2-state (binary); calmer stable equilibrium at ~24% settled activity, 90% of max entropy.",
+  },
+  {
+    name: "Vertex Duet (calmer variant I)",
+    code: "K2N16R4184168513",
+    description: "2-state (binary); calmer stable equilibrium at ~24% settled activity, 89% of max entropy.",
+  },
+  {
+    name: "Vertex Duet (calmer variant J)",
+    code: "K2N16R16103090934",
+    description:
+      "2-state (binary) — despite the '3' that might suggest otherwise, the rule code's K prefix is what carries the state count, and this one says K2: it decodes as 2-state, not 3-state (see docs/KEY_LEARNINGS.md if a rule code's actual state count is ever in doubt). Calmer stable equilibrium at ~27% settled activity, 83% of max entropy.",
+  },
+  {
+    name: "Fading Vertex Duet",
+    code: "K2N16R4184168384",
+    description:
+      "2-state (binary); still slowly decaying even by generation 900 (~10% activity at gen 100, ~3% by gen 900, decay rate dropping sharply) rather than a settled equilibrium — included for its rich, near-maximal-entropy (93%) texture during the long decay, not as a stable pick.",
+  },
+  {
+    name: "Quiet Vertex Duet",
+    code: "K2N16R4184168577",
+    description: "2-state (binary); quieter stable equilibrium at ~17% settled activity, 85% of max entropy.",
+  },
+  {
+    name: "Slow-Fading Vertex Field",
+    code: "K2N16R16103090944",
+    description:
+      "2-state (binary) — like the 'calmer variant J' entry above, this decodes as 2-state despite the number suggesting otherwise. Still slowly decaying at generation 400 (not yet a settled equilibrium: ~17% activity at gen 100, ~9% at gen 400) — included for its rich near-maximal-entropy texture on the way down, not as a stable pick.",
+  },
+  {
+    name: "Vivid Vertex Rosettes",
+    code: "K3N16R17488889006862679878961727916943008164378058140",
+    description:
+      "3-state; a distinct, more turbulent rule than the Vertex Rosette Field family below — stable living equilibrium at ~59% settled activity with very high color diversity (95% of max entropy), giving a dense 3-color (orange/green/blue) pinwheel weave rather than one dominant background color.",
+  },
+  {
+    name: "Vertex Rosette Field",
     code: "K3N16R103015167793430793634347264187881395621689945824",
     description:
       "3-state; genuine dynamic equilibrium — settled activity holds flat at ~34% of cells changing per generation from generation 100 through at least generation 400 (not still decaying), with high color diversity (83% of max entropy). Small pinwheel rosettes nucleate densely across an orange-dominant field, distinctly denser/finer-grained than any 3-neighbor rule (the richer 16-cell neighborhood mixes far more per step).",
+  },
+  {
+    name: "Vertex Rosette Field (variant G)",
+    code: "K3N16R103015167793430793634347264187881395621689945820",
+    description: "3-state; a rule-table variant of Vertex Rosette Field so close it was indistinguishable from the default in every trajectory metric tested (~34% settled activity, 83% of max entropy) — included since it is a genuinely different rule number, even though it behaves identically in practice.",
+  },
+  {
+    name: "Vertex Rosette Field (variant H)",
+    code: "K3N16R103015167793430793634347264187881395621689945825",
+    description: "3-state; another rule-table variant indistinguishable from the default in every trajectory metric tested (~34% settled activity, 83% of max entropy) — same caveat as variant G.",
+  },
+  {
+    name: "Vertex Rosette Field (variant A)",
+    code: "K3N16R103015167793430793634347264187881395621689945799",
+    description: "3-state; same living-equilibrium character as Vertex Rosette Field (~34% settled activity, 84% of max entropy) — a nearby rule-table variant, visually indistinguishable in practice.",
+  },
+  {
+    name: "Vertex Rosette Field (variant B)",
+    code: "K3N16R103015167793430793634347264187881395621689945787",
+    description: "3-state; same living-equilibrium character as Vertex Rosette Field (~35% settled activity, 85% of max entropy).",
+  },
+  {
+    name: "Vertex Rosette Field (variant C)",
+    code: "K3N16R103015167793430793634347264187881395621689945776",
+    description: "3-state; same living-equilibrium character as Vertex Rosette Field (~35% settled activity, 84% of max entropy).",
+  },
+  {
+    name: "Vertex Rosette Field (variant D)",
+    code: "K3N16R103015167793430793634347264187881395621689945703",
+    description: "3-state; same living-equilibrium character as Vertex Rosette Field (~34% settled activity, 83% of max entropy).",
+  },
+  {
+    name: "Vertex Rosette Field (variant E)",
+    code: "K3N16R103015167793430793634347264187881395621689945645",
+    description: "3-state; same living-equilibrium character as Vertex Rosette Field (~35% settled activity, 85% of max entropy).",
+  },
+  {
+    name: "Vertex Rosette Field (variant F)",
+    code: "K3N16R103015167793430793634347264187881395621689945575",
+    description: "3-state; same living-equilibrium character as Vertex Rosette Field (~34% settled activity, 85% of max entropy).",
+  },
+  {
+    name: "Vertex Duet (variant K)",
+    code: "K2N16R12",
+    description: "2-state (binary); stable living equilibrium at ~37% settled activity, moderate color diversity (68% of max entropy) — livelier but more two-toned than the main Vertex Duet variants.",
+  },
+  {
+    name: "Vertex Duet (variant L)",
+    code: "K2N16R1001000001",
+    description: "2-state (binary); stable living equilibrium at ~25% settled activity with near-maximal color diversity (99.5% of max entropy).",
+  },
+  {
+    name: "Vertex Duet (variant M)",
+    code: "K2N16R1008000008",
+    description: "2-state (binary); stable living equilibrium at ~26% settled activity, moderate color diversity (69% of max entropy).",
+  },
+  {
+    name: "Vertex Duet (variant O)",
+    code: "K2N16R246194049",
+    description: "2-state (binary); settled living equilibrium at ~21% settled activity (gentle downward drift from ~24% at gen 100, largely leveled off by gen 600), 82% of max entropy.",
+  },
+  {
+    name: "Vertex Duet (variant N)",
+    code: "K2N16R1010000002",
+    description: "2-state (binary); stable living equilibrium at ~24% settled activity, 80% of max entropy.",
+  },
+  {
+    name: "Vertex Ember (calm)",
+    code: "K2N16R1000000002",
+    description: "2-state (binary); settles to a very low, steady simmer (~1% of cells changing per generation) with fairly high color diversity (84% of max entropy) for how little is moving — a much calmer sibling of the main Vertex Duet family.",
+  },
+  {
+    name: "Vertex Ember (variant)",
+    code: "K2N16R1500000001",
+    description: "2-state (binary); very low, steady simmer (~2.7% of cells changing per generation), 73% of max entropy.",
+  },
+  {
+    name: "Vertex Ember (variant B)",
+    code: "K2N16R1006016704",
+    description: "2-state (binary); very low, steady simmer (~2.6% of cells changing per generation), 67% of max entropy.",
+  },
+  {
+    name: "Vertex Rosette Bloom (variant G)",
+    code: "K3N16R167179288139610273436421531147705326271258902751",
+    description: "3-state; stable living equilibrium at ~52% settled activity, near-maximal color diversity (99% of max entropy).",
+  },
+  {
+    name: "Vertex Rosette Bloom (variant H)",
+    code: "K3N16R167179288139610273436421531147705326271507114564",
+    description: "3-state; stable living equilibrium at ~42% settled activity, 99% of max entropy.",
+  },
+  {
+    name: "Vertex Rosette Bloom (variant I)",
+    code: "K3N16R167179288139610273436421531147705326271507291034",
+    description: "3-state; stable living equilibrium at ~46% settled activity, near-maximal color diversity (100% of max entropy).",
+  },
+  {
+    name: "Vertex Rosette Bloom (variant J)",
+    code: "K3N16R167179288139610273436421531147705326273046957099",
+    description: "3-state; stable living equilibrium at ~56% settled activity, 93% of max entropy.",
+  },
+  {
+    name: "Vertex Rosette Bloom (variant K)",
+    code: "K3N16R167179288139610273436421531147705326272765661516",
+    description: "3-state; stable living equilibrium at ~51% settled activity, 98% of max entropy.",
+  },
+  {
+    name: "Turbulent Vertex Field (variant B)",
+    code: "K3N16R63584775683932601350967461771593475683552281009",
+    description: "3-state; another highly turbulent stable rule — settled activity holds flat at ~68% of cells changing per generation, 94% of max entropy.",
+  },
+  {
+    name: "Turbulent Vertex Field (variant C)",
+    code: "K3N16R63584775683932601350967461771593475683547867855",
+    description: "3-state; turbulent stable rule at ~54% settled activity, 97% of max entropy.",
+  },
+  {
+    name: "Vertex Duet (variant P)",
+    code: "K2N16R8482378383",
+    description: "2-state (binary); stable living equilibrium at ~28% settled activity, 95% of max entropy.",
+  },
+  {
+    name: "Vertex Duet (variant Q)",
+    code: "K2N16R8482378449",
+    description: "2-state (binary); stable-ish living equilibrium at ~24% settled activity (gentle downward drift), 84% of max entropy.",
+  },
+  {
+    name: "Vertex Ember (variant C)",
+    code: "K2N16R8482378369",
+    description: "2-state (binary); very calm, stable simmer at ~2% settled activity, 78% of max entropy.",
+  },
+  {
+    name: "Fading Vertex Duet (variant B)",
+    code: "K2N16R8482509441",
+    description: "2-state (binary); still slowly decaying at generation 500 (~18% activity at gen 100, ~9% by gen 500) rather than fully settled — included for its texture during the decay, 93% of max entropy.",
+  },
+  {
+    name: "Fading Vertex Duet (variant C)",
+    code: "K2N16R8483164801",
+    description: "2-state (binary); still slowly decaying at generation 500 (~19% activity at gen 100, ~12% by gen 500), 92% of max entropy.",
+  },
+  {
+    name: "Fading Vertex Duet (variant D)",
+    code: "K2N16R8483295873",
+    description: "2-state (binary); still slowly decaying at generation 500 (~19% activity at gen 100, ~15% by gen 500), 93% of max entropy.",
+  },
+  {
+    name: "Slow-Fading Vertex Field (variant B)",
+    code: "K2N16R8484606593",
+    description: "2-state (binary); decays much further than its siblings — from ~11% activity at gen 100 down to under 1% by gen 500 — included for its texture on the way down, not as a stable pick.",
+  },
+  {
+    name: "Vertex Duet (variant R)",
+    code: "K2N16R8487752321",
+    description: "2-state (binary); stable-ish living equilibrium at ~16% settled activity (gentle downward drift), near-maximal color diversity (98% of max entropy).",
+  },
+  {
+    name: "Vertex Duet (variant S)",
+    code: "K2N16R8487752331",
+    description: "2-state (binary); stable living equilibrium at ~23% settled activity, 89% of max entropy.",
+  },
+  {
+    name: "Vertex Duet (variant T)",
+    code: "K2N16R8487752351",
+    description: "2-state (binary); stable living equilibrium at ~22% settled activity, 86% of max entropy.",
+  },
+  {
+    name: "Vertex Duet (variant U)",
+    code: "K2N16R8487752383",
+    description: "2-state (binary); stable-ish living equilibrium at ~22% settled activity (gentle downward drift), 82% of max entropy.",
+  },
+  {
+    name: "Turbulent Vertex Field (variant D)",
+    code: "K3N16R67621017273582108520000122195222769429967731350",
+    description: "3-state; the most turbulent stable rules found yet — settled activity holds flat at ~68% of cells changing per generation, 96% of max entropy.",
+  },
+  {
+    name: "Turbulent Vertex Field (variant E)",
+    code: "K3N16R67621017273579080010870624199189064964804763459",
+    description: "3-state; same highly turbulent stable character as variant D — ~68% settled activity, 96% of max entropy.",
+  },
+  {
+    name: "Turbulent Vertex Field (variant F)",
+    code: "K3N16R67621017273575155310264029857419101043295715276",
+    description: "3-state; same highly turbulent stable character as variant D — ~68% settled activity, 96% of max entropy.",
+  },
+  {
+    name: "Vertex Duet (variant V)",
+    code: "K2N16R8479101701",
+    description: "2-state (binary); stable living equilibrium at ~27% settled activity, near-maximal color diversity (99% of max entropy).",
+  },
+  {
+    name: "Slow-Fading Vertex Field (variant C)",
+    code: "K2N16R8479101698",
+    description: "2-state (binary); decays sharply — from ~10% activity at gen 100 down to under 1% by gen 500 — included for its texture on the way down, not as a stable pick.",
+  },
+  {
+    name: "Turbulent Vertex Field (variant G)",
+    code: "K3N16R50544774313814502760183179737693435322631818989",
+    description: "3-state; stable living equilibrium at ~56% settled activity, 85% of max entropy.",
+  },
+  {
+    name: "Rising Vertex Bloom",
+    code: "K3N16R28554514649552541143697439180084848",
+    description:
+      "3-state; unusual growth curve — starts low (~6% activity at gen 100), *rises* to ~33% by gen 250 and holds there through at least gen 500, rather than the more common decay-to-plateau — 59% of max entropy once settled.",
+  },
+  {
+    name: "Frozen Vertex Void",
+    code: "K3N16R26236778070855095122049361413376270",
+    description: "3-state; collapses completely to a single uniform color within the first few generations (0% activity throughout the test) — included for completeness, not as a living pick.",
+  },
+  {
+    name: "Vertex Quartet",
+    code: "K4N16R8074722502326595458059341820121109397250800631134857891122471857963950706668180543119754287752182043860075181252508120",
+    description:
+      "4-state; the first stable living equilibrium found at k=4 under this neighborhood (a random search over 1200 4-state trials found none) — settled activity holds flat at ~65% of cells changing per generation from generation 100 through at least generation 500, with near-maximal color diversity (97% of max entropy).",
+  },
+  {
+    name: "Turbulent Vertex Field (variant)",
+    code: "K3N16R101356818320019715368486541822367752467920189986",
+    description: "3-state; another highly turbulent stable rule — settled activity holds flat at ~65% of cells changing per generation, 93% of max entropy.",
+  },
+  {
+    name: "Turbulent Vertex Field",
+    code: "K3N16R51291680085950450002668124196305513463105723991",
+    description: "3-state; the most turbulent stable rule in this list — settled activity holds flat at ~71% of cells changing per generation, with very high color diversity (96% of max entropy).",
+  },
+  {
+    name: "Vertex Rosette Bloom",
+    code: "K3N16R26349043154162526143891210047497607823765666030",
+    description: "3-state; stable living equilibrium at ~58% settled activity, 83% of max entropy.",
+  },
+  {
+    name: "Vertex Rosette Bloom (calmer variant)",
+    code: "K3N16R26349043154162526143891210047497607823800183917",
+    description: "3-state; stable living equilibrium at ~52% settled activity, 92% of max entropy.",
+  },
+  {
+    name: "Vertex Rosette Bloom (calmest variant)",
+    code: "K3N16R26349043154162526143891210047497607823800183147",
+    description: "3-state; stable living equilibrium at ~43% settled activity, 85% of max entropy.",
+  },
+  {
+    name: "Quiet Vertex Rosettes",
+    code: "K3N16R6818535212130415045039618357116624139532942753",
+    description: "3-state; calmer stable living equilibrium at ~14% settled activity, 75% of max entropy.",
   },
   {
     name: "Vertex Mosaic (dense, near-frozen)",

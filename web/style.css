@@ -76,7 +76,7 @@ body {
   position: fixed;
   top: 16px;
   left: 16px;
-  width: 320px;
+  width: 380px;
   max-height: calc(100vh - 32px);
   overflow-y: auto;
   background: rgba(18, 18, 22, 0.88);
@@ -308,6 +308,66 @@ code {
 .swatch.selected {
   border-color: #fff;
   box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.4);
+}
+
+.advanced-rule-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.advanced-rule-row .swatch {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  cursor: default;
+}
+
+.pin-button {
+  flex: none;
+  width: 52px;
+  padding: 4px 2px;
+  font-size: 11px;
+}
+
+.pin-button.pinned {
+  background: #6b4a1e;
+  border-color: #e0a44d;
+  font-weight: 600;
+}
+
+.row-step-button {
+  flex: none;
+  width: 22px;
+  padding: 2px 0;
+  font-size: 11px;
+}
+
+.row-bar {
+  flex: 1 1 auto;
+  min-width: 60px;
+  height: 16px;
+  border-radius: 3px;
+  overflow: hidden;
+  display: flex;
+  background: #14141a;
+}
+
+.row-bar-segment.stasis {
+  background: #6b6b76;
+}
+
+.row-bar-segment.advance {
+  background: #5fae78;
+}
+
+.row-bar-segment.retreat {
+  background: #d9645a;
+}
+
+.row-bar-segment.other {
+  background: #8a5fbf;
 }
 
 select {

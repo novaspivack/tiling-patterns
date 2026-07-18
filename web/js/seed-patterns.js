@@ -22,7 +22,7 @@ export const SEED_PATTERNS = [
 ];
 
 export const DEFAULT_SEED_PATTERN_ID = "random";
-export const DEFAULT_DENSITY = 0.05;
+export const DEFAULT_DENSITY = 0.02;
 
 // The lattice's 6 unique cross-hex step directions, in canonical
 // angular order (each consecutive pair is a 60° turn) — used for

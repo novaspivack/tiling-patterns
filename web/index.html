@@ -46,8 +46,8 @@
       <section>
         <label for="zoom-slider">Zoom</label>
         <div class="row">
-          <input type="range" id="zoom-slider" min="0" max="100" step="0.5" value="75" />
-          <span id="zoom-label" class="tag">75%</span>
+          <input type="range" id="zoom-slider" min="0" max="100" step="0.5" value="30" />
+          <span id="zoom-label" class="tag">30%</span>
         </div>
         <div class="row">
           <button id="zoom-reset-button">Reset view (zoom/pan)</button>
@@ -59,8 +59,8 @@
         <select id="seed-pattern-select"></select>
         <div class="row density-row">
           <label for="density-slider">Density</label>
-          <input type="range" id="density-slider" min="0" max="1" step="0.01" value="0.05" />
-          <span id="density-label" class="tag">0.05</span>
+          <input type="range" id="density-slider" min="0" max="1" step="0.01" value="0.02" />
+          <span id="density-label" class="tag">0.02</span>
         </div>
         <div class="row" id="place-center-row">
           <button id="place-center-button">Place at center</button>
@@ -81,8 +81,8 @@
       <section>
         <h2>Neighborhood</h2>
         <div class="row">
-          <button id="neighborhood-3-button" class="mode-button active" title="Each triangle's 3 edge-adjacent neighbors">Edge (3)</button>
-          <button id="neighborhood-16-button" class="mode-button" title="The 3 edge-neighbors plus every other cell sharing one of the triangle's 3 vertices (9 same-hex + 4 cross-hex)">Edge + Vertex (16)</button>
+          <button id="neighborhood-3-button" class="mode-button" title="Each triangle's 3 edge-adjacent neighbors">Edge (3)</button>
+          <button id="neighborhood-16-button" class="mode-button active" title="The 3 edge-neighbors plus every other cell sharing one of the triangle's 3 vertices (9 same-hex + 4 cross-hex)">Edge + Vertex (16)</button>
         </div>
         <p class="hint">Switching neighborhoods applies that neighborhood's default preset — a rule number means a completely different rule under a different neighborhood, so old rules don't carry over as-is.</p>
       </section>
@@ -107,8 +107,29 @@
         <div class="row">
           <button id="copy-code-button">Copy</button>
           <button id="apply-code-button">Apply code above</button>
+          <button id="reset-rule-button" title="Reset the whole rule to the all-stasis 'lowest config' (rule number 0)">Reset to 0</button>
         </div>
         <p id="rule-status-label" class="status"></p>
+      </section>
+
+      <section>
+        <div class="row">
+          <h2>Advanced rule view</h2>
+          <button id="advanced-view-toggle">Show</button>
+        </div>
+        <p class="hint">
+          The rule table is one row per color — everything that decides what happens to a cell currently in that color. Pin a color to freeze its row, then Randomize
+          (or the per-row ▲/▼) only touches the colors left unpinned — e.g. pin one color to keep it clumpy while varying the rest to make them mobile. Reset a color to 0,
+          then increment it a little at a time to find the critical point where its behavior changes.
+        </p>
+        <div id="advanced-rule-rows" hidden></div>
+        <div class="row" id="advanced-rule-actions" hidden>
+          <input type="text" id="advanced-rule-code-field" spellcheck="false" autocomplete="off" readonly title="The full rule code these rows currently represent" />
+          <button id="advanced-copy-code-button">Copy</button>
+        </div>
+        <div class="row" id="advanced-rule-actions-2" hidden>
+          <button id="randomize-unpinned-button">Randomize unpinned colors</button>
+        </div>
       </section>
 
       <section>

@@ -6,7 +6,7 @@ import { Engine } from "./engine.js";
 import { Camera } from "./camera.js";
 import { Renderer, EDGE_LENGTH } from "./render.js";
 import { generatePalette, DEFAULT_PALETTE_ID } from "./palette.js";
-import { decodeRule, DEFAULT_NUM_NEIGHBORS } from "./rule.js";
+import { decodeRule, randomizeRows, cycleRow, zeroTable, zeroRow, DEFAULT_NUM_NEIGHBORS } from "./rule.js";
 import { defaultPresetFor } from "./presets.js";
 import { applySeedPattern, applySeedPatternAt, isPlaceablePattern, DEFAULT_SEED_PATTERN_ID, DEFAULT_DENSITY } from "./seed-patterns.js";
 import { foldToFundamental } from "./fold.js";
@@ -16,7 +16,8 @@ import { wireControls } from "./controls.js";
 const GRID_WIDTH = 512;
 const GRID_HEIGHT = 512;
 const DEFAULT_SPEED = 8; // generations/sec — the GPU engine is fast enough that this already looks lively
-const DEFAULT_ZOOM_PERCENT = 75;
+const DEFAULT_ZOOM_PERCENT = 30;
+const DEFAULT_APP_NUM_NEIGHBORS = 16; // the richer edge+vertex neighborhood is the app's startup default; rule.js's own DEFAULT_NUM_NEIGHBORS (3) is a separate concept — the decode-time fallback for legacy 2-part rule codes, which must stay 3 for backward compatibility
 const MAX_STEPS_PER_FRAME = 30; // guards against a runaway catch-up burst after e.g. a backgrounded tab
 
 class App {
@@ -36,8 +37,14 @@ class App {
     this.onStatsUpdate = null;
 
     this.numStates = 2;
-    this.numNeighbors = DEFAULT_NUM_NEIGHBORS;
+    this.numNeighbors = DEFAULT_APP_NUM_NEIGHBORS;
     this.table = null;
+    // States "pinned" in the advanced rule view — their row of the table
+    // (everything governing "what happens to a cell currently in this
+    // state") is left untouched by Randomize/randomizeUnpinnedRows, so a
+    // pinned color's behavior (e.g. clumpy vs. mobile) stays fixed while
+    // the rest of the rule is varied.
+    this.pinnedStates = new Set();
     this.paletteId = DEFAULT_PALETTE_ID;
     this.paletteData = generatePalette(this.paletteId, 2);
     this.currentPresetCode = null;
@@ -103,8 +110,45 @@ class App {
     this.engine.setRule(numStates, table, numNeighbors);
     this.currentPresetCode = presetCode;
     this.paintState = Math.min(this.paintState, numStates - 1);
+    // Pins reference specific state indices; a rule change can shrink the
+    // state count out from under a pin that no longer exists.
+    for (const state of this.pinnedStates) {
+      if (state >= numStates) this.pinnedStates.delete(state);
+    }
     this.stats.reset();
     if (this.onRuleChange) this.onRuleChange();
+  }
+
+  togglePinnedState(state) {
+    if (this.pinnedStates.has(state)) this.pinnedStates.delete(state);
+    else this.pinnedStates.add(state);
+  }
+
+  /** Randomizes every state's row except the pinned ones, keeping the state count and neighborhood fixed. If every state is pinned, this is a no-op (nothing left to vary). */
+  randomizeUnpinnedRows() {
+    const allStates = Array.from({ length: this.numStates }, (_, s) => s);
+    const targets = allStates.filter((s) => !this.pinnedStates.has(s));
+    if (targets.length === 0) return;
+    const table = randomizeRows(this.table, this.numStates, this.numNeighbors, targets, Math.random);
+    this.applyRule(this.numStates, table, this.numNeighbors);
+  }
+
+  /** Pushes just one state's row up (`delta > 0`) or down (`delta < 0`) by `|delta|` colors, cyclically, leaving every other state's row (pinned or not) untouched — see rule.js's `cycleRow`. */
+  cycleStateRow(state, delta) {
+    const table = cycleRow(this.table, this.numStates, this.numNeighbors, state, delta);
+    this.applyRule(this.numStates, table, this.numNeighbors);
+  }
+
+  /** Resets the whole rule to the all-stasis "lowest config" (rule number 0) — a clean starting point for "increment slightly to find the critical point" exploration. */
+  resetRuleToZero() {
+    const table = zeroTable(this.numStates, this.numNeighbors);
+    this.applyRule(this.numStates, table, this.numNeighbors);
+  }
+
+  /** Resets just one state's row to all-zero, leaving every other state's row untouched. */
+  resetStateRowToZero(state) {
+    const table = zeroRow(this.table, this.numStates, this.numNeighbors, state);
+    this.applyRule(this.numStates, table, this.numNeighbors);
   }
 
   /** Switches the active neighborhood (3 edge-only, or 16 edge+vertex) and applies that neighborhood's default preset — a rule number under the old neighborhood has a completely different table layout, so it cannot be carried over as-is. */
