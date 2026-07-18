@@ -183,22 +183,57 @@ export function wireControls(app) {
       decButton.className = "row-step-button";
       decButton.title = `Push color ${state}'s whole row down one color (cyclic; hold to repeat)`;
       decButton.textContent = "▼";
-      wireHoldToAccelerate(decButton, -1, (delta) => app.cycleStateRow(state, delta));
       rowEl.appendChild(decButton);
 
       const incButton = document.createElement("button");
       incButton.className = "row-step-button";
       incButton.title = `Push color ${state}'s whole row up one color (cyclic; hold to repeat)`;
       incButton.textContent = "▲";
-      wireHoldToAccelerate(incButton, 1, (delta) => app.cycleStateRow(state, delta));
       rowEl.appendChild(incButton);
+
+      // Live proof-of-activity while a ▼/▲ is held: counts up every ~120ms
+      // tick so it's visually obvious whether the hold is still doing
+      // anything, since the row's own cyclic range (numStates colors) is
+      // small enough that the bar segments below can visibly stop changing
+      // well before the button is released (a full cycle back to the
+      // starting rule is indistinguishable from "stuck").
+      const tickBadge = document.createElement("span");
+      tickBadge.className = "row-tick-badge";
+      rowEl.appendChild(tickBadge);
+
+      // Row cycling only ever matters modulo numStates (2-9) — reusing the
+      // global editor's step sizes that grow into the thousands/millions
+      // would make the applied shift `step mod numStates`, which is exactly
+      // 0 (a true no-op) as soon as the growing step size becomes a
+      // multiple of numStates. That's the bug behind "it fires but stops
+      // moving mid-hold": at the default 2-state rule, the very first
+      // acceleration tier (step=10) already lands on `10 mod 2 = 0`.
+      // Keeping the step at a constant 1 means every tick always changes
+      // something, for every possible numStates.
+      const rowStepSizeForElapsed = () => 1;
+      wireHoldToAccelerate(decButton, -1, (delta) => app.cycleStateRow(state, delta), {
+        stepSizeForElapsed: rowStepSizeForElapsed,
+        onTick: (count) => {
+          tickBadge.textContent = `↓×${count}`;
+          tickBadge.classList.add("active");
+        },
+        onRelease: () => tickBadge.classList.remove("active"),
+      });
+      wireHoldToAccelerate(incButton, 1, (delta) => app.cycleStateRow(state, delta), {
+        stepSizeForElapsed: rowStepSizeForElapsed,
+        onTick: (count) => {
+          tickBadge.textContent = `↑×${count}`;
+          tickBadge.classList.add("active");
+        },
+        onRelease: () => tickBadge.classList.remove("active"),
+      });
 
       const bar = document.createElement("div");
       bar.className = "row-bar";
       rowEl.appendChild(bar);
 
       advancedRuleRows.appendChild(rowEl);
-      advancedRuleRowRefs.push({ swatch, pinButton, bar });
+      advancedRuleRowRefs.push({ swatch, pinButton, bar, tickBadge });
     }
   }
 
@@ -386,34 +421,46 @@ export function wireControls(app) {
       setRuleStatus(error.message, true);
     }
   }
-  // Press-and-hold accelerates: a quick tap steps by 1, but holding ramps
-  // the step size up the longer the button stays held (1 -> 10 -> 100 ->
-  // 1,000 -> 10,000 -> 100,000 -> 1,000,000 -> 10,000,000), so exploring
-  // rule space by large jumps doesn't require thousands of individual
-  // clicks. `shiftRuleNumber`/`shiftRow` (rule.js) already clamp at their
-  // own maximum, so a step this large is harmless on a small table/row (it
-  // just saturates at 0 or the max) — "large enough" rules/rows are simply
-  // the ones where a big jump is *visibly* useful rather than clamping
-  // away. Reused for both the global rule number and each advanced-view
-  // row's own number — `applyStep(signedStep)` is whatever "shift by this
-  // signed amount" means in that context.
-  function wireHoldToAccelerate(button, direction, applyStep) {
+  // Press-and-hold accelerates: a quick tap steps by 1, but by default
+  // holding ramps the step *size* up the longer the button stays held (1 ->
+  // 10 -> 100 -> 1,000 -> ... -> 10,000,000, see `defaultStepSizeForElapsed`)
+  // so exploring the huge rule-number space by large jumps doesn't require
+  // thousands of individual clicks. `shiftRuleNumber`/`shiftRow` (rule.js)
+  // already clamp at their own maximum, so a step this large is harmless on
+  // a small table/row (it just saturates at 0 or the max). Callers with a
+  // *small, cyclic* range instead pass `stepSizeForElapsed: () => 1` (see
+  // the per-row ▲/▼ wiring below) — scaling the step size up for those would
+  // silently go to zero effect whenever the step becomes a multiple of that
+  // small cycle length (e.g. the default 2-state rule: the very first
+  // acceleration tier, step=10, is `10 mod 2 = 0`, a true no-op — the row
+  // would appear to freeze mid-hold with no indication it had stopped).
+  //
+  // Reused for both the global rule number and each advanced-view row's own
+  // number — `applyStep(signedStep)` is whatever "shift by this signed
+  // amount" means in that context. `onTick(tickCount)` fires after every
+  // applied step (including the initial, non-accelerated one) with a
+  // 1-based count of steps applied so far in the current hold, so callers
+  // can show live "still going" feedback; `onRelease()` fires once the hold
+  // ends, however it ends.
+  function defaultStepSizeForElapsed(elapsedMs) {
+    if (elapsedMs > 24000) return 10000000;
+    if (elapsedMs > 20000) return 1000000;
+    if (elapsedMs > 16000) return 100000;
+    if (elapsedMs > 8000) return 10000;
+    if (elapsedMs > 4000) return 1000;
+    if (elapsedMs > 2000) return 100;
+    if (elapsedMs > 800) return 10;
+    return 1;
+  }
+
+  function wireHoldToAccelerate(button, direction, applyStep, { stepSizeForElapsed = defaultStepSizeForElapsed, onTick = () => {}, onRelease = () => {} } = {}) {
     let holdTimeoutId = null;
     let repeatIntervalId = null;
     let holdStartTime = null;
-
-    function stepSizeForElapsed(elapsedMs) {
-      if (elapsedMs > 24000) return 10000000;
-      if (elapsedMs > 20000) return 1000000;
-      if (elapsedMs > 16000) return 100000;
-      if (elapsedMs > 8000) return 10000;
-      if (elapsedMs > 4000) return 1000;
-      if (elapsedMs > 2000) return 100;
-      if (elapsedMs > 800) return 10;
-      return 1;
-    }
+    let tickCount = 0;
 
     function stopHold() {
+      const wasHolding = holdStartTime !== null;
       if (holdTimeoutId !== null) {
         clearTimeout(holdTimeoutId);
         holdTimeoutId = null;
@@ -423,21 +470,59 @@ export function wireControls(app) {
         repeatIntervalId = null;
       }
       holdStartTime = null;
+      tickCount = 0;
+      if (wasHolding) onRelease();
+    }
+
+    function tick(delta) {
+      applyStep(delta);
+      tickCount++;
+      onTick(tickCount);
     }
 
     button.addEventListener("pointerdown", (event) => {
       event.preventDefault();
-      applyStep(direction);
+      // Guarantees every subsequent pointer event for this press — however
+      // far the pointer physically drifts, and however this row/button is
+      // re-rendered mid-hold — is still delivered to this exact element, so
+      // `pointerup` below is never silently missed. Without this, releasing
+      // the mouse even slightly off the button (easy during a hold) fires
+      // `pointerup` on whatever element happens to be under the pointer at
+      // that instant instead — which has no listener — and the accelerating
+      // `setInterval` above just keeps running forever, invisibly, until the
+      // user notices the rule is still changing on its own. Best-effort: a
+      // handful of browsers/input sources reject capture for a given
+      // pointer id, and since an exception thrown here would otherwise be
+      // swallowed by the browser *before* the step below ever runs (DOM
+      // listener exceptions don't propagate to the dispatcher), capture
+      // failing must never prevent the tap/hold itself from working.
+      try {
+        button.setPointerCapture(event.pointerId);
+      } catch {
+        // Capture unavailable for this pointer — the hold still works via
+        // the pointerup/pointercancel/blur listeners below, just without
+        // the off-target-release protection.
+      }
       holdStartTime = performance.now();
+      tick(direction * stepSizeForElapsed(0));
       holdTimeoutId = setTimeout(() => {
         repeatIntervalId = setInterval(() => {
-          applyStep(direction * stepSizeForElapsed(performance.now() - holdStartTime));
+          tick(direction * stepSizeForElapsed(performance.now() - holdStartTime));
         }, 120);
       }, 400);
     });
     button.addEventListener("pointerup", stopHold);
-    button.addEventListener("pointerleave", stopHold);
     button.addEventListener("pointercancel", stopHold);
+    // Fires if capture is ever released/stolen out from under this press
+    // (e.g. another element grabs capture) — a backstop for the same
+    // "pointerup never arrives" failure mode `setPointerCapture` above
+    // exists to prevent.
+    button.addEventListener("lostpointercapture", stopHold);
+    // Backstop for the case where the pointer is released while the window
+    // itself doesn't have focus (e.g. the user alt-tabs away, or a native
+    // dialog steals focus, mid-hold) — the page may never receive a
+    // pointerup/pointercancel at all in that case.
+    window.addEventListener("blur", stopHold);
   }
   wireHoldToAccelerate(ruleIncrementButton, 1, shiftRule);
   wireHoldToAccelerate(ruleDecrementButton, -1, shiftRule);

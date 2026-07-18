@@ -344,6 +344,22 @@ code {
   font-size: 11px;
 }
 
+.row-tick-badge {
+  flex: none;
+  width: 34px;
+  font-size: 10px;
+  font-family: monospace;
+  color: #666;
+  text-align: center;
+  visibility: hidden;
+}
+
+.row-tick-badge.active {
+  visibility: visible;
+  color: #e0c44d;
+  font-weight: 600;
+}
+
 .row-bar {
   flex: 1 1 auto;
   min-width: 60px;
