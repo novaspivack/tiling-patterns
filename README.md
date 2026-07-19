@@ -26,7 +26,7 @@ below in the meantime.
   extended **16**-neighbor mode that also sums the 13 vertex-sharing (but non-edge-sharing)
   neighbors — the same rule *number* means a completely different rule under each neighborhood, so
   switching applies that neighborhood's own default preset rather than reinterpreting the current one.
-- **Rule presets:** 73 hand-vetted 16-neighbor rules and 30 3-neighbor rules, each watched for
+- **Rule presets:** 103 hand-vetted 16-neighbor rules and 30 3-neighbor rules, each watched for
   hundreds of generations and picked for genuinely interesting long-run behavior (not just an
   interesting first few frames) — see `web/js/presets.js` for the full list and characterizations.
 - **Manual rule editor:** randomize, paste/copy a rule code, and increment/decrement through

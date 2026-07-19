@@ -140,7 +140,13 @@ export const PRESETS_3 = [
 // neighborhood/rule on startup — see main.js.
 export const PRESETS_16 = [
   {
-    name: "Vertex Duet (default)",
+    name: "Glider Fronts (sparser, default)",
+    code: "K2N16R207368",
+    description:
+      "2-state (binary); default 16-neighbor rule. A sparse field of small traveling structures (gliders) that drift and interact against a mostly-quiet background, rather than a dense packed texture — an easier pattern to visually track individual structures in than the denser rules below.",
+  },
+  {
+    name: "Vertex Duet",
     code: "K2N16R1006017859",
     description:
       "2-state (binary); the liveliest of the curated 16-neighbor rules — settled activity holds flat at ~40% of cells changing per generation from generation 100 through at least generation 400, with near-maximal color diversity (97% of max entropy). Dense, sharply-defined orange/blue pinwheel rosettes packed edge-to-edge across the whole field.",
@@ -266,9 +272,9 @@ export const PRESETS_16 = [
     description: "3-state; same living-equilibrium character as Vertex Rosette Field (~34% settled activity, 85% of max entropy).",
   },
   {
-    name: "Vertex Duet (variant K)",
+    name: "Vertex Duet (wigglers)",
     code: "K2N16R12",
-    description: "2-state (binary); stable living equilibrium at ~37% settled activity, moderate color diversity (68% of max entropy) — livelier but more two-toned than the main Vertex Duet variants.",
+    description: "2-state (binary); stable living equilibrium at ~37% settled activity, moderate color diversity (68% of max entropy) — livelier but more two-toned than the main Vertex Duet variants; small wiggling/oscillating structures.",
   },
   {
     name: "Vertex Duet (variant L)",
@@ -462,6 +468,155 @@ export const PRESETS_16 = [
     code: "K3N16R4450054231099096180116572419708437",
     description:
       "3-state; genuinely borderline — with the app's default sparse seed it slowly dies out toward near-zero activity (~2.5% at gen 100, under 1% by gen 500, over 99% state 0), but the small residual minority-color population never quite vanishes across repeated seeds — right at the edge between living and frozen.",
+  },
+  // Batch of 2-state rules submitted with their own characterization labels
+  // (visually vetted by the submitter, not independently re-measured here —
+  // descriptions below reflect the submitted label directly).
+  {
+    name: "Vertex Mosaic (frozen, balanced mix)",
+    code: "K2N16R17179738124",
+    description:
+      "2-state (binary); freezes completely (0% activity by generation 100, confirmed across repeated seeds) into a static mosaic with a near-even 2-color split (~55-58%/42-45%) and near-maximal entropy (~0.98) — a frozen pattern rather than a living one.",
+  },
+  {
+    name: "Vertex Wheels (difficult)",
+    code: "K2N16R1511517186",
+    description: "2-state (binary); submitted as \"difficult wheels\" — rotating pinwheel-like structures that are harder to sustain/stabilize than the calmer wheel variants below.",
+  },
+  {
+    name: "Vertex Triangles",
+    code: "K2N16R12845511085",
+    description: "2-state (binary); submitted as \"triangles\" — triangular structures visible in the settled pattern.",
+  },
+  {
+    name: "Vertex Triangles and Wheels",
+    code: "K2N16R12845510991",
+    description: "2-state (binary); submitted as \"triangles and wheels\" — a mix of triangular and rotating pinwheel structures.",
+  },
+  {
+    name: "Vertex Billows",
+    code: "K2N16R17179837668",
+    description: "2-state (binary); submitted as \"billows\" — smooth, undulating large-scale movement.",
+  },
+  {
+    name: "Vertex Wheels (light)",
+    code: "K2N16R15915434015",
+    description: "2-state (binary); submitted as \"light wheels\" — a lighter-toned rotating-pinwheel variant.",
+  },
+  {
+    name: "Vertex Wheels (dark)",
+    code: "K2N16R14021622082",
+    description: "2-state (binary); submitted as \"dark wheels\" — a darker-toned rotating-pinwheel variant.",
+  },
+  {
+    name: "Flashing Fans",
+    code: "K2N16R2178574594",
+    description: "2-state (binary); submitted as \"flashing fans\" — fan-shaped structures that flicker/flash.",
+  },
+  {
+    name: "Flashing Fans (variant)",
+    code: "K2N16R2178574595",
+    description: "2-state (binary); submitted as \"flashing fans 2\" — a close variant of Flashing Fans (differs from it by 1 in rule number).",
+  },
+  {
+    name: "Interesting Fans",
+    code: "K2N16R5841480257",
+    description: "2-state (binary); submitted as \"interesting fans\" — another fan-structure variant, distinct from the Flashing Fans family.",
+  },
+  {
+    name: "Flashing Fans (balanced)",
+    code: "K2N16R2994379279",
+    description: "2-state (binary); submitted as \"flashing fans balanced\" — a more evenly-balanced variant of the flashing-fan character.",
+  },
+  {
+    name: "Molecular Soup",
+    code: "K2N16R6841480257",
+    description: "2-state (binary); submitted as \"molecular soup\" — loose, blob-like clusters drifting and interacting like a fluid of molecules.",
+  },
+  {
+    name: "Better Molecules",
+    code: "K2N16R10708811394",
+    description: "2-state (binary); submitted as \"better molecules\" — a refined variant of the Molecular Soup character.",
+  },
+  {
+    name: "Vertex Blinkers",
+    code: "K2N16R10742042369",
+    description: "2-state (binary); submitted as \"blinkers\" — cells or small clusters that flash on/off in place.",
+  },
+  {
+    name: "Vertex Blinkers (moving)",
+    code: "K2N16R10742042371",
+    description: "2-state (binary); submitted as \"moving blinkers\" — the blinker character above, but the flashing structures also travel.",
+  },
+  {
+    name: "Balanced Explorer",
+    code: "K2N16R16708328200",
+    description: "2-state (binary); submitted as \"balanced explorer\" — structures that spread/explore the grid with a balanced overall character.",
+  },
+  {
+    name: "Vertex Crescents",
+    code: "K2N16R16708333728",
+    description: "2-state (binary); submitted as \"crescents\" — curved, arc-shaped structures.",
+  },
+  {
+    name: "Vertex Bacteria",
+    code: "K2N16R16708372301",
+    description: "2-state (binary); submitted as \"bacteria\" — small, organic-looking scattered structures.",
+  },
+  {
+    name: "Glider Waves",
+    code: "K2N16R211464",
+    description: "2-state (binary); submitted as \"glider waves\" — traveling structures (gliders) moving in wave-like fronts.",
+  },
+  {
+    name: "Glider Waves (variant)",
+    code: "K2N16R211336",
+    description: "2-state (binary); submitted as \"glider waves 2\" — a close variant of Glider Waves.",
+  },
+  {
+    name: "Glider Fronts",
+    code: "K2N16R210440",
+    description: "2-state (binary); submitted as \"glider fronts\" — traveling structures organized into moving fronts, denser than Glider Fronts (sparser, default) above.",
+  },
+  {
+    name: "Glider Fans",
+    code: "K2N16R16852987912",
+    description: "2-state (binary); submitted as \"glider fans\" — traveling structures that spread out in fan-like arrangements.",
+  },
+  {
+    name: "Vertex Blobs",
+    code: "K2N16R16852986925",
+    description: "2-state (binary); submitted as \"blobs\" — soft, rounded clustered regions.",
+  },
+  {
+    name: "Jax",
+    code: "K2N16R4266578766",
+    description: "2-state (binary); submitted as \"jax\" — a distinctive pattern named directly by the submitter.",
+  },
+  {
+    name: "Dragon Skin",
+    code: "K2N16R4266580515",
+    description: "2-state (binary); submitted as \"dragon skin\" — a scaly, textured large-scale pattern.",
+  },
+  {
+    name: "Dragon Skin (variant)",
+    code: "K2N16R4266580613",
+    description: "2-state (binary); submitted as \"dragon skin 2\" — a variant of the Dragon Skin texture.",
+  },
+  {
+    name: "Red Ants",
+    code: "K2N16R6755821186",
+    description: "2-state (binary); submitted as \"red ants\" — small, scattered, motile structures.",
+  },
+  {
+    name: "Vertex Colonies",
+    code: "K2N16R1596988432",
+    description: "2-state (binary); submitted as \"colonies\" — clustered groups of structures that hold together.",
+  },
+  {
+    name: "Vertex Horseshoes",
+    code: "K2N16R9096545284",
+    description: "2-state (binary); submitted as \"horseshoes\" — U-shaped/horseshoe-shaped structures.",
   },
   {
     name: "Strobing Vertex Triad",
