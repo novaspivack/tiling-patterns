@@ -754,6 +754,12 @@ export const PRESETS_16 = [
     description:
       "3-state; the most turbulent living-equilibrium rule in this list — settles to a high, stable ~55-56% activity plateau with near-maximal color diversity (0.95 of max entropy) and a well-balanced 3-way split (~42%/39%/19%). Constructed by rescaling the 8-neighbor Moore-grid \"Diamoeba\" rule's birth/survival thresholds to this lattice's 16-neighbor count (see experiments/lifelike_rule_constructor.py), then hand-tuned by 1 in the rule number from the constructor's own best diamoeba-derived candidate.",
   },
+  {
+    name: "Red Tips",
+    code: "K3N16R108083826493498695369623661704927283473076121594",
+    description:
+      "3-state; submitted as \"red tips\" — settles to a stable, lively ~48% activity plateau with moderate-high color diversity (0.76-0.77 of max entropy). A small minority color (~6%) forms accent-like details against two much larger colors (~35% and ~60%), matching the submitted name.",
+  },
 ];
 
 export const PRESETS_BY_NEIGHBORHOOD = { 3: PRESETS_3, 16: PRESETS_16 };
