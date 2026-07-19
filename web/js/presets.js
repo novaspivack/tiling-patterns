@@ -140,10 +140,16 @@ export const PRESETS_3 = [
 // neighborhood/rule on startup — see main.js.
 export const PRESETS_16 = [
   {
-    name: "Glider Fronts (sparser, default)",
+    name: "Glider Waves (3, default)",
+    code: "K2N16R205320",
+    description:
+      "2-state (binary); default 16-neighbor rule, submitted as \"glider waves 3\" — a further refinement of the Glider Waves family below, picked as the new default over Glider Fronts (sparser).",
+  },
+  {
+    name: "Glider Fronts (sparser)",
     code: "K2N16R207368",
     description:
-      "2-state (binary); default 16-neighbor rule. A sparse field of small traveling structures (gliders) that drift and interact against a mostly-quiet background, rather than a dense packed texture — an easier pattern to visually track individual structures in than the denser rules below.",
+      "2-state (binary); previous default. A sparse field of small traveling structures (gliders) that drift and interact against a mostly-quiet background, rather than a dense packed texture — an easier pattern to visually track individual structures in than the denser rules below.",
   },
   {
     name: "Vertex Duet",
@@ -576,7 +582,7 @@ export const PRESETS_16 = [
   {
     name: "Glider Fronts",
     code: "K2N16R210440",
-    description: "2-state (binary); submitted as \"glider fronts\" — traveling structures organized into moving fronts, denser than Glider Fronts (sparser, default) above.",
+    description: "2-state (binary); submitted as \"glider fronts\" — traveling structures organized into moving fronts, denser than Glider Fronts (sparser) above.",
   },
   {
     name: "Glider Fans",
