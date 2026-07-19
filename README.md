@@ -84,6 +84,41 @@ experiments/           # Reproducible demo/verification scripts
 web/                   # WebGL2 shader app (the real, fast, interactive automaton)
 ```
 
+## Related work
+
+The **Kisrhombille tiling** itself is well established in tiling theory: John Conway named it (the
+"kis" operator — adding a center point and quartering — applied to the rhombille tiling); it is the
+dual of the [great rhombitrihexagonal tiling](https://en.wikipedia.org/wiki/Truncated_trihexagonal_tiling),
+face configuration V4.6.12. The specific visual inspiration for this project was
+[John Greene's `Geom_Kisrhombille`](https://github.com/johnalexandergreene/Geom_Kisrhombille) —
+a coordinate-system and shape-grammar toolkit built on this tiling (used for his Forsythia fractal
+generative art), not a cellular automaton.
+
+There is existing academic work specifically on this tiling's *geometry*: Fatma Kablan, Béla
+Vízvári, and Benedek Nagy (Eastern Mediterranean University) published digital-distance formulas
+for it — ["A digital distance on the kisrhombille tiling"](https://doi.org/10.1107/s2053273323010628)
+(Acta Cryst. A, 2024) and
+["Digital distance in the kisrhombille grid with the edge neighborhood"](https://doi.org/10.1107/s2053273325008095)
+(Acta Cryst. A, 2025). Both independently distinguish "edge neighbors" from "edge *and* vertex
+neighbors" — the same two neighborhood classes this project's 3-neighbor/16-neighbor toggle
+implements — but for shortest-path distance, not evolving states. The same group has studied actual
+cellular automaton *dynamics* on the related-but-distinct plain triangular grid (e.g.
+["Cellular Automata Approach to Mathematical Morphology in the Triangular Grid"](https://doi.org/10.12700/aph.15.6.2018.6.3),
+Acta Polytechnica Hungarica, 2018), not on the Kisrhombille tiling.
+
+The generalized *outer-totalistic-rule-on-an-arbitrary-tiling* framework this project's
+`K<states>N<neighbors>R<number>` rule encoding builds on traces back to Stephen Wolfram's
+*A New Kind of Science* (2002), which explicitly demonstrates outer-totalistic cellular automata on
+triangular lattices, pentagonal tilings, and even non-repetitive Penrose tilings, each rule
+"specified by an outer-totalistic code number."
+
+As far as could be determined from the above search, no prior work runs an actual evolving,
+generation-by-generation cellular automaton on the Kisrhombille tiling specifically — this project's
+combination of that lattice with a searchable, GPU-accelerated, multi-state, multi-neighborhood
+outer-totalistic rule space (and the curated "goldilocks" rules that came out of searching it)
+appears to be new. None of the presets in `web/js/presets.js` are drawn from an existing published
+rule catalog — there wasn't one to draw from.
+
 ## License
 
 [**PolyForm Noncommercial 1.0.0**](LICENSE)
