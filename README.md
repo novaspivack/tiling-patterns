@@ -61,6 +61,17 @@ served over HTTP (as above); opening `index.html` directly via a `file://` URL w
 (browsers block ES module imports under that origin) — the app itself detects this case and shows
 an on-page message with the fix.
 
+### Tips for exploring
+
+- For rules with 3 or more colors, try starting from one of the symmetric seed patterns (rings,
+  spirals, sector wheels, twin blooms) rather than plain random fill — the extra colors read much
+  more clearly against a structured starting point.
+- 30% zoom (the default) at higher speeds is a good general-purpose combination for watching a
+  rule's long-run character rather than individual cells.
+- Some rules that flicker (rapid, near-total per-generation change) read as noisy/static at low
+  speed but resolve into a much clearer strobe or pulse effect at higher speeds — worth bumping the
+  speed slider up on those before deciding a rule looks like noise.
+
 ## Python tools (rule search and geometry checks)
 
 The `tiling_patterns` Python package mirrors the web engine's rule semantics at CPU-search speed
