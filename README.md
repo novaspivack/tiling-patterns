@@ -9,8 +9,7 @@ the whole transition table exposed and searchable, not fixed). A large library o
 dynamic equilibrium instead of freezing solid or dissolving into noise: rosette-like blooms that keep
 drifting and reforming, synchronized flickers, slow-growing minority-color fields, and more.
 
-**Live demo:** not yet published to GitHub Pages — see [Run the demo locally](#run-the-demo-locally)
-below in the meantime.
+**Live demo:** [novaspivack.github.io/tiling-patterns](https://novaspivack.github.io/tiling-patterns/)
 
 ## What it is
 
