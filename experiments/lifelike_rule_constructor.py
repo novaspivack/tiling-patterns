@@ -278,6 +278,19 @@ def main() -> None:
     parser.add_argument("--no-aging", action="store_true", help="skip the 3-state aging/refractory generalization")
     parser.add_argument("--isolated-trials", type=int, default=4)
     parser.add_argument("--max-print", type=int, default=40)
+    parser.add_argument(
+        "--rank-by",
+        choices=("busy-field", "isolated-persistence"),
+        default="busy-field",
+        help=(
+            "'busy-field' (default) ranks by settled activity/entropy from the app's real sparse-random seed -- the "
+            "relevant question for curating visually appealing 'goldilocks zone' presets. 'isolated-persistence' ranks "
+            "by whether a small isolated seed survives -- the relevant question for glider/spaceship hunting only; "
+            "these two rankings can disagree substantially (a rule can excel at one and fail the other), since a small "
+            "isolated seed's fate with nothing to interact with is a different question from the whole grid's fate "
+            "under constant mutual interaction from a real seed."
+        ),
+    )
     args = parser.parse_args()
 
     for num_neighbors in args.num_neighbors:
@@ -291,7 +304,10 @@ def main() -> None:
             isolated = isolated_glider_check(candidate.num_states, candidate.table, num_neighbors, trials=args.isolated_trials)
             kept.append((candidate, tail_activity, entropy, density, isolated))
 
-        kept.sort(key=lambda entry: (entry[4]["exploded"], entry[4]["died"], -entry[1]))
+        if args.rank_by == "busy-field":
+            kept.sort(key=lambda entry: -entry[1])
+        else:
+            kept.sort(key=lambda entry: (entry[4]["exploded"], entry[4]["died"], -entry[1]))
         translating = [k for k in kept if k[4].get("is_translating")]
         if translating:
             print(f"  *** {len(translating)} candidate(s) show TRUE isolated translation -- inspect these first! ***")

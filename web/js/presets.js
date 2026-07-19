@@ -122,10 +122,57 @@ export const PRESETS_3 = [
   { name: "3-State Variant H", code: "K3R867894112", description: "Hand-picked from the browser's Randomize tool." },
   { name: "3-State Variant K", code: "K3R3826621804", description: "Hand-picked from the browser's Randomize tool." },
   {
-    name: "Wandering Motes",
+    name: "Circling Motes",
     code: "K3R9394323876",
     description:
-      "3-state; from the app's default sparse seed, settles into a mostly-quiet field (~7-12% activity, ~91% background color) with two small, persistent minority-color populations (~4-5% each) — similar character to the Edge-of-Chaos family. Found via a dedicated isolated-seed search for long-lived translating structures (experiments/glider_persistence_search.py): from a small isolated perturbation on an empty grid, this rule reliably produces a compact 4-21-cell structure that survives 2000+ generations without dying, exploding, or freezing solid, continuously changing shape — but rigorous long-run tracking showed it wanders within a bounded ~2-unit neighborhood of its start rather than making unbounded net progress in a fixed direction, so it is a genuine long-lived \"wobbler,\" not a translating glider/spaceship. No rule found in that search (tens of thousands of random 2-9 state trials, both neighborhoods) produced a true unboundedly-translating structure — see the script's own diagnostic output and docs/KEY_LEARNINGS.md for the full investigation.",
+      "3-state; from the app's default sparse seed, settles into a mostly-quiet field (~7-12% activity, ~91% background color) with two small, persistent minority-color populations (~4-5% each) — similar character to the Edge-of-Chaos family. Found via a dedicated isolated-seed search for long-lived translating structures (experiments/glider_persistence_search.py): a small isolated perturbation on an empty grid reliably produces a compact 4-21-cell structure that survives 2000+ generations without dying, exploding, or freezing solid — but rigorous long-run tracking showed it wanders within a bounded ~2-unit neighborhood of its start rather than making unbounded net progress, and watching it directly confirms why: its \"gliders\" travel in circles rather than straight lines, and it produces some genuinely interesting in-place oscillators alongside them. No rule found in that search (tens of thousands of random-rule trials, both neighborhoods) produced a structure that travels in a straight, unbounded line — see experiments/glider_persistence_search.py for the full investigation.",
+  },
+  {
+    name: "Wandering Scaffolds",
+    code: "K3R5394910678",
+    description: "3-state; settles to a stable ~26-29% activity plateau, one dominant color (~77%) with two structural minority colors (~8% and ~15%) forming scaffold-like lattice structures that keep shifting.",
+  },
+  {
+    name: "Wandering Scaffolds (variant 2)",
+    code: "K3R5394910670",
+    description: "3-state; same scaffold family, denser — ~14-33% activity (settles around ~33% by generation 250), dominant color ~70-72%, minority colors ~12% and ~18%.",
+  },
+  {
+    name: "Wandering Scaffolds (variant 3)",
+    code: "K3R5394909569",
+    description:
+      "3-state; genuinely critical/seed-sensitive — some sparse seeds collapse completely to a single flat color within ~100 generations, while others settle into the same lively ~34-35% activity, 0.72-entropy scaffold character as the rest of this family. Worth reseeding a few times if it looks dead at first.",
+  },
+  {
+    name: "Wandering Scaffolds (variant 4)",
+    code: "K3R5394910664",
+    description: "3-state; same scaffold family, livelier and more balanced — ~32-33% activity with the most even 3-way color split so far (~21%/60%/19%), 0.87 entropy.",
+  },
+  {
+    name: "Wandering Scaffolds (variant 5)",
+    code: "K3R5394910668",
+    description: "3-state; the calmest of this family — settles to a very low ~1.3-1.8% activity with a heavily dominant background color (~90%), small persistent minority colors (~4-5% each) rather than the denser scaffolding of the other variants.",
+  },
+  {
+    name: "Wandering Scaffolds (variant 6)",
+    code: "K3R5394910335",
+    description: "3-state; the liveliest and most balanced of this family — settles to ~41-42% activity with high entropy (0.93-0.94) and a near-even 3-way split (~20%/51%/29%).",
+  },
+  {
+    name: "Wandering Scaffolds (variant 7)",
+    code: "K3R5394910663",
+    description: "3-state; ~34% activity, 0.87 entropy, color split ~23%/60%/17% — between variants 4 and 6 in liveliness.",
+  },
+  {
+    name: "Quick Wandering",
+    code: "K3R5394909565",
+    description: "3-state; settles quickly (by generation 100) to a stable ~35-36% activity plateau, 0.72 entropy, color split ~9%/70%/21% — reaches its living equilibrium faster than most of the Wandering Scaffolds family.",
+  },
+  {
+    name: "Wandering Lines",
+    code: "K3R10089454884",
+    description:
+      "3-state; more textured and slower-settling than the scaffold family — activity drifts between ~10-24% over the first 500 generations rather than reaching a flat plateau quickly, with an inverted color balance (one color dominant at ~70-72%, but it is the *minority* colors, ~10-18%, that carry most of the visible line-like structure).",
   },
 ];
 
@@ -230,7 +277,7 @@ export const PRESETS_16 = [
     name: "Vertex Duet (calmer variant J)",
     code: "K2N16R16103090934",
     description:
-      "2-state (binary) — despite the '3' that might suggest otherwise, the rule code's K prefix is what carries the state count, and this one says K2: it decodes as 2-state, not 3-state (see docs/KEY_LEARNINGS.md if a rule code's actual state count is ever in doubt). Calmer stable equilibrium at ~27% settled activity, 83% of max entropy.",
+      "2-state (binary) — despite the '3' that might suggest otherwise, the rule code's K prefix is what carries the state count, and this one says K2: it decodes as 2-state, not 3-state. Calmer stable equilibrium at ~27% settled activity, 83% of max entropy.",
   },
   {
     name: "Fading Vertex Duet",
@@ -700,6 +747,12 @@ export const PRESETS_16 = [
     name: "Vertex Mosaic (variant)",
     code: "K2N16R11266351152",
     description: "2-state (binary); same near-frozen dense-pinwheel character as Vertex Mosaic, slightly higher residual flicker (~0.8% of cells changing per generation).",
+  },
+  {
+    name: "Triameoba",
+    code: "K3N16R30903154024175998408025650963019",
+    description:
+      "3-state; the most turbulent living-equilibrium rule in this list — settles to a high, stable ~55-56% activity plateau with near-maximal color diversity (0.95 of max entropy) and a well-balanced 3-way split (~42%/39%/19%). Constructed by rescaling the 8-neighbor Moore-grid \"Diamoeba\" rule's birth/survival thresholds to this lattice's 16-neighbor count (see experiments/lifelike_rule_constructor.py), then hand-tuned by 1 in the rule number from the constructor's own best diamoeba-derived candidate.",
   },
 ];
 
