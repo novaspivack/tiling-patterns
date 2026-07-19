@@ -121,6 +121,12 @@ export const PRESETS_3 = [
   { name: "3-State Variant F", code: "K3R2349979794", description: "Hand-picked from the browser's Randomize tool." },
   { name: "3-State Variant H", code: "K3R867894112", description: "Hand-picked from the browser's Randomize tool." },
   { name: "3-State Variant K", code: "K3R3826621804", description: "Hand-picked from the browser's Randomize tool." },
+  {
+    name: "Wandering Motes",
+    code: "K3R9394323876",
+    description:
+      "3-state; from the app's default sparse seed, settles into a mostly-quiet field (~7-12% activity, ~91% background color) with two small, persistent minority-color populations (~4-5% each) — similar character to the Edge-of-Chaos family. Found via a dedicated isolated-seed search for long-lived translating structures (experiments/glider_persistence_search.py): from a small isolated perturbation on an empty grid, this rule reliably produces a compact 4-21-cell structure that survives 2000+ generations without dying, exploding, or freezing solid, continuously changing shape — but rigorous long-run tracking showed it wanders within a bounded ~2-unit neighborhood of its start rather than making unbounded net progress in a fixed direction, so it is a genuine long-lived \"wobbler,\" not a translating glider/spaceship. No rule found in that search (tens of thousands of random 2-9 state trials, both neighborhoods) produced a true unboundedly-translating structure — see the script's own diagnostic output and docs/KEY_LEARNINGS.md for the full investigation.",
+  },
 ];
 
 // 16-neighbor ("edge + vertex") rules — found via
