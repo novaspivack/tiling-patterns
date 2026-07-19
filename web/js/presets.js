@@ -146,16 +146,34 @@ export const PRESETS_3 = [
 // neighborhood/rule on startup — see main.js.
 export const PRESETS_16 = [
   {
-    name: "Glider Waves (3, default)",
+    name: "Goldilocks Zone (default)",
+    code: "K2N16R204808",
+    description:
+      "2-state (binary); default 16-neighbor rule, submitted as \"goldilocks zone\" — very balanced and stable, with sparse, ongoing regions of activity rather than gliders. From the app's default sparse seed: settles to a very low but genuinely nonzero, non-decaying activity plateau (~1-3% of cells changing per generation, stable from generation 100 through at least generation 500) with a small persistent minority-color population (~1.5-1.8%) — a calm, mostly-quiet field with small pockets of ongoing change rather than a dead freeze. Picked as the new default over Glider Waves (3) below.",
+  },
+  {
+    name: "Dense Goldilocks",
+    code: "K2N16R201992",
+    description:
+      "2-state (binary); submitted as \"dense goldilocks\" — same stable living-equilibrium character as Goldilocks Zone but considerably denser: settles to ~19-20% activity (stable from generation 250 onward) with a larger minority-color population (~10-11%).",
+  },
+  {
+    name: "Goldilocks Zone (medium density)",
+    code: "K2N16R185864",
+    description:
+      "2-state (binary); submitted as a medium-density variant of the Goldilocks Zone/Dense Goldilocks family — settles to ~11-14% activity (stable from generation 250 onward) with a minority-color population of ~7.5-8%, between Goldilocks Zone (default) and Dense Goldilocks in both activity level and density.",
+  },
+  {
+    name: "Glider Waves (3)",
     code: "K2N16R205320",
     description:
-      "2-state (binary); default 16-neighbor rule, submitted as \"glider waves 3\" — a further refinement of the Glider Waves family below, picked as the new default over Glider Fronts (sparser).",
+      "2-state (binary); submitted as \"glider waves 3\" — a further refinement of the Glider Waves family below. Previous default, superseded by Goldilocks Zone above.",
   },
   {
     name: "Glider Fronts (sparser)",
     code: "K2N16R207368",
     description:
-      "2-state (binary); previous default. A sparse field of small traveling structures (gliders) that drift and interact against a mostly-quiet background, rather than a dense packed texture — an easier pattern to visually track individual structures in than the denser rules below.",
+      "2-state (binary); a sparse field of small traveling-looking structures that drift and interact against a mostly-quiet background, rather than a dense packed texture — an easier pattern to visually track individual structures in than the denser rules below. (Not actually validated as self-sustaining gliders in isolation — see experiments/glider_persistence_search.py and Wandering Motes below.)",
   },
   {
     name: "Vertex Duet",
