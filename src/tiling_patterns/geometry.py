@@ -230,10 +230,10 @@ def level_alignment_residual(base_edge_length: float, level: int, child_hex: Hex
     """Distance from a level-`(level + 1)` hex center to the nearest level-`level`
     hex center *or* vertex, whichever is closer.
 
-    Used to verify the self-similar refinement relation (see module docstring
-    and `SPEC_002_KRB` Section 2): scaling by `1/sqrt(3)` and rotating by -30
-    degrees per finer level is the standard aperture-3 hierarchical hexagonal
-    grid refinement (a "Generalized Balanced Ternary" hex addressing scheme).
+    Used to verify the self-similar refinement relation (see module
+    docstring): scaling by `1/sqrt(3)` and rotating by -30 degrees per finer
+    level is the standard aperture-3 hierarchical hexagonal grid refinement
+    (a "Generalized Balanced Ternary" hex addressing scheme).
     Every child-level hex center lands *exactly* on a parent-level lattice
     feature — a parent hex *center* when `(child.q - child.r) % 3 == 0`,
     otherwise a parent hex *vertex* — for any level and any child hex

@@ -3,9 +3,9 @@
 Renders the level-0 Kisrhombille lattice (hexagons split into their 12
 fundamental 30-60-90 triangles) over a small region, overlays level-1 and
 level-2 hex centers, and prints the numeric alignment residuals from
-`tiling_patterns.geometry.level_alignment_residual` (see SPEC_002_KRB
-Section 2) — the plotted level-1/2 centers should sit exactly on level-0
-vertices or centers, with no visible offset.
+`tiling_patterns.geometry.level_alignment_residual` — the plotted level-1/2
+centers should sit exactly on level-0 vertices or centers, with no visible
+offset.
 
 Run: `python experiments/kisrhombille_geometry_check.py`
 Output: `experiments/output/kisrhombille_geometry_check.png`
@@ -64,7 +64,7 @@ def overlay_level_centers(ax: plt.Axes, level: int, hex_coords: list[HexCoord], 
 
 
 def print_numeric_verification() -> None:
-    print("Numeric alignment residuals (SPEC_002_KRB Section 2 claim):")
+    print("Numeric alignment residuals (multi-level refinement alignment claim):")
     print(f"{'level':>5} {'child_hex':>12} {'(q-r)%3':>8} {'residual':>14}")
     samples = [HexCoord(1, 0), HexCoord(0, 1), HexCoord(2, 2), HexCoord(-3, 3), HexCoord(4, -1)]
     for level in range(4):

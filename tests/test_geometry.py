@@ -1,4 +1,4 @@
-"""Tests for the Kisrhombille lattice geometry (see SPEC_002_KRB)."""
+"""Tests for the Kisrhombille lattice geometry (`tiling_patterns.geometry`)."""
 
 from __future__ import annotations
 
@@ -162,8 +162,8 @@ def test_level_rotation_is_30_degrees_per_level() -> None:
     ],
 )
 def test_level_alignment_residual_is_near_zero(level: int, child_hex: HexCoord) -> None:
-    """The core geometric claim of SPEC_002_KRB Section 2: every child-level hex
-    center lands exactly on a parent-level hex center or vertex (a residue-mod-3
+    """The core geometric claim of the multi-level refinement relation: every
+    child-level hex center lands exactly on a parent-level hex center or vertex (a residue-mod-3
     trichotomy — the Generalized Balanced Ternary hex hierarchy), for every level
     and every non-origin child hex. The origin itself is excluded: it is the
     fixed point of every level's rotation+scale, so it trivially coincides with

@@ -1,5 +1,3 @@
-# See NOTES/PROJECT_SEED.md §7.1–§7.2 (gitignore policy + Git LFS for large files).
-
 # OS
 .DS_Store
 Thumbs.db
@@ -21,7 +19,7 @@ Thumbs.db
 *.log
 logs/
 
-# Caches (exclude noisy cache dirs; do not blanket-ignore *.json — see PROJECT_SEED §7.1)
+# Caches (exclude noisy cache dirs; do not blanket-ignore *.json — config/data files use it)
 .cache/
 
 # Python (if used later)

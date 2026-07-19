@@ -1,5 +1,4 @@
-"""Tests for the Kisrhombille CA transition-rule prototype (see SPEC_002_KRB
-Sections 3-4 and `tiling_patterns.ca_rule`)."""
+"""Tests for the Kisrhombille CA transition-rule prototype (`tiling_patterns.ca_rule`)."""
 
 from __future__ import annotations
 

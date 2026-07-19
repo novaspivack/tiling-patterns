@@ -1,5 +1,5 @@
-"""Qualitative tuning sweep for the Kisrhombille CA rule (`SPEC_002_KRB`
-Sections 3-4), run before porting the rule to GLSL.
+"""Qualitative tuning sweep for the Kisrhombille CA rule's subdivide/merge and
+color-competition thresholds, run before porting the rule to GLSL.
 
 Runs `tiling_patterns.ca_rule.step` for many generations under a few
 parameter combinations and reports the resulting level/color distribution,

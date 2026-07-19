@@ -1,16 +1,17 @@
-"""Small-grid prototype of the Kisrhombille CA transition rule (`SPEC_002_KRB`
-Sections 3-4): cyclic color competition, subdivide/merge triggers with merge
-hysteresis, and the level-balance constraint.
+"""Small-grid prototype of the Kisrhombille CA transition rule: cyclic color
+competition, subdivide/merge triggers with merge hysteresis, and a
+level-balance constraint across refinement levels.
 
 Scope: this module verifies the rule's *control logic* — the thresholds and
 hysteresis that decide when a cell advances color, subdivides, or merges —
 on the level-0 adjacency graph, with a per-cell integer `level` field
 standing in for "how deep this location is currently refined." It
 intentionally does not instantiate the finer-level geometry a subdivided
-cell would spatially own (a child Kisrhombille sub-grid, per
-`geometry.py` Section 2); that spatial instantiation is the WebGL engine's
-job (`EPIC_002` queue items 4-5). Tuning the logic here in milliseconds,
-before porting it to GLSL, is the entire point of this module.
+cell would spatially own (a child Kisrhombille sub-grid, per `geometry.py`);
+that spatial instantiation would be the WebGL engine's job in a full
+multi-level implementation (not part of the single-level rule the app
+actually ships — see the top-level README). Tuning the logic here in
+milliseconds, before porting it to GLSL, is the entire point of this module.
 """
 
 from __future__ import annotations
@@ -33,7 +34,7 @@ class CellState:
 
 @dataclass(frozen=True)
 class RuleParams:
-    """Tunable thresholds from `SPEC_002_KRB` Section 4.
+    """Tunable thresholds for the color-competition and subdivide/merge rule.
 
     Defaults are empirically chosen (see `experiments/ca_rule_parameter_sweep.py`):
     a 1-of-3-neighbor `advance_neighbor_threshold` makes color flips so easy
@@ -111,7 +112,8 @@ def _next_level_and_streak(address: CellAddress, grid: Grid, edge_length: float,
 def _enforce_level_balance(tentative: Grid, edge_length: float, params: RuleParams) -> Grid:
     """Repeatedly force-subdivide (never force-merge) any cell whose level
     trails an existing neighbor's level by more than 1, until stable — the
-    `SPEC_002_KRB` Section 4.4 balance constraint."""
+    level-balance constraint (neighboring cells' refinement levels may never
+    differ by more than 1)."""
     current = dict(tentative)
     for _ in range(params.max_level + 1):
         changed = False
